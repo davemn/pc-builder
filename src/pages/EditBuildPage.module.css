@@ -62,11 +62,3 @@
   flex-direction: column;
   background-color: var(--dark0);
 }
-
-.emptyStateText {
-  font-size: 1rem;
-  /* Centers vertically & horizontally */
-  /* Per https://stackoverflow.com/a/33856609 */
-  margin: auto;
-  color: var(--light80);
-}

@@ -1,9 +1,8 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
-import { ComparisonTable } from "components/ComparisonTable";
-import { CpuColumns } from "lib/columns";
-import { BuildSchema, CpuSchema, MoboSchema, db } from "lib/db";
+import { SelectBuildComponent } from "components/SelectBuildComponent";
+import { BuildSchema, CpuSchema, MoboSchema, StoreName, db } from "lib/db";
 import { EditBuildPageProps, NavigateProp } from "lib/page";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
@@ -19,7 +18,7 @@ export const EditBuildPage = (props: Props) => {
   const { buildId, navigate } = props;
 
   /* Sets the content pane */
-  const [activeTable, setActiveTable] = useState<string | null>(null);
+  const [activeTable, setActiveTable] = useState<StoreName | null>(null);
 
   const build = useLiveQuery<BuildSchema>(
     () => db.table("build").where({ id: buildId }).first(),
@@ -77,55 +76,7 @@ export const EditBuildPage = (props: Props) => {
         </div>
       </Div.Sidebar>
       <Div.Content>
-        {activeTable === null && (
-          <div className={classNames.emptyStateText}>
-            Select a component to add to the build
-          </div>
-        )}
-        {activeTable === "cpu" && (
-          <ComparisonTable
-            dataStoreName="cpu"
-            dataStoreLabel="CPUs"
-            columns={CpuColumns}
-            getIsBuildCompatible={(row) => {
-              // return buildMobo ? row.socket === buildMobo.socket : true;
-              return row.socket === "AM5";
-            }}
-            onRemove={async (cpuId) => {
-              await db.transaction("rw", ["edges"], async (tx) => {
-                await tx
-                  .table("edges")
-                  .where({
-                    sourceId: buildId,
-                    sourceType: "build",
-                    targetType: "cpu",
-                    targetId: cpuId,
-                  })
-                  .delete();
-              });
-            }}
-            onSelect={async (cpuId) => {
-              await db.transaction("rw", ["edges"], async (tx) => {
-                await tx
-                  .table("edges")
-                  .where({
-                    sourceId: buildId,
-                    sourceType: "build",
-                    targetType: "cpu",
-                  })
-                  .delete();
-
-                await tx.table("edges").add({
-                  sourceId: buildId,
-                  sourceType: "build",
-                  targetId: cpuId,
-                  targetType: "cpu",
-                });
-              });
-            }}
-            selectedRowId={buildCpu?.id}
-          />
-        )}
+        <SelectBuildComponent buildId={buildId} componentType={activeTable} />
       </Div.Content>
     </Div.Container>
   );
