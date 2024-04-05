@@ -1,0 +1,45 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  /* align-items: center; */
+  row-gap: 20px;
+}
+
+.fieldContainer {
+  display: flex;
+  flex-direction: column;
+  /* row-gap: 10px; */
+}
+
+.fieldContainer > label {
+  font-size: 1rem;
+  color: var(--light90);
+}
+
+.selectContainer {
+  display: flex;
+  column-gap: 10px;
+}
+
+.addButton {
+  flex: 1;
+  background-color: gray;
+  border: none;
+  border-radius: 4px;
+  /* padding: 10px; */
+}
+
+.actions {
+  display: flex;
+  column-gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  width: auto;
+}
+
+.saveButton {
+  width: auto;
+  background-color: var(--accent0);
+}

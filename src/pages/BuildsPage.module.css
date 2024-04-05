@@ -1,0 +1,8 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+}

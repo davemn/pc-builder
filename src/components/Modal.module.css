@@ -1,0 +1,6 @@
+.modal {
+  width: 40vw;
+  margin: auto;
+  background-color: var(--dark10);
+  padding: 20px;
+}

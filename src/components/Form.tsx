@@ -1,0 +1,169 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
+
+import { db } from "lib/db";
+
+import classNames from "./Form.module.css";
+
+interface FormProps {
+  className?: string;
+  initialData?: Record<string, number | string>;
+  onCancel?: () => void;
+  onSubmit: (data: Record<string, any>) => void;
+  schema: Array<{
+    type: "text" | "numeric";
+    label: string;
+    name: string;
+    // multiple?: boolean;
+  }>;
+}
+
+// Example usage:
+// if (field.type === "select") {
+//   return (
+//     <StoredSelect
+//       key={field.name}
+//       tableName={field.name}
+//       label={field.label}
+//       multiple={field.multiple}
+//     />
+//   );
+// }
+
+interface SelectProps {
+  tableName: string;
+  label: string;
+  multiple?: boolean;
+}
+
+const StoredSelect = (props: SelectProps) => {
+  const { tableName, label, multiple = false } = props;
+
+  const rows = useLiveQuery(
+    () => db.table(tableName).toCollection().sortBy("name"),
+    [tableName]
+  );
+
+  return (
+    <div className={classNames.fieldContainer}>
+      <label>{label}</label>
+      <div className={classNames.selectContainer}>
+        <select name={tableName} multiple={multiple}>
+          {rows?.map((row) => (
+            <option key={row.id} value={row.id}>
+              {row.name}
+            </option>
+          ))}
+        </select>
+        <button className={classNames.addButton} type="button">
+          +
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export const Form = (props: FormProps) => {
+  const {
+    className: classNameProp,
+    initialData,
+    onCancel,
+    onSubmit,
+    schema,
+  } = props;
+
+  const [data, setData] = useState(() => {
+    return Object.fromEntries(
+      schema.map((field) => {
+        const defaultFieldValue: string | number =
+          field.type === "numeric" ? 0 : "";
+
+        let fieldValue = defaultFieldValue;
+
+        if (initialData) {
+          const rawFieldValue = initialData[field.name];
+          if (field.type === "numeric") {
+            fieldValue = parseFloat(rawFieldValue as string);
+          } else {
+            fieldValue = `${rawFieldValue}`;
+          }
+        }
+
+        return [field.name, fieldValue];
+      })
+    );
+  });
+
+  // const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   const data = Object.fromEntries(new FormData(e.currentTarget).entries());
+  //   onSubmit(data);
+  // };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(data);
+  };
+
+  return (
+    <form
+      className={[classNames.form, classNameProp].join(" ")}
+      onSubmit={handleSubmit}
+    >
+      {schema.map((field) => {
+        if (field.type === "text") {
+          return (
+            <div key={field.name} className={classNames.fieldContainer}>
+              <label>{field.label}</label>
+              <input
+                type="text"
+                name={field.name}
+                onChange={(e) => {
+                  const value = e.currentTarget.value;
+                  setData((prevData) => ({
+                    ...prevData,
+                    [field.name]: value,
+                  }));
+                }}
+                value={data[field.name]}
+              />
+            </div>
+          );
+        } else if (field.type === "numeric") {
+          return (
+            <div key={field.name} className={classNames.fieldContainer}>
+              <label>{field.label}</label>
+              <input
+                type="number"
+                name={field.name}
+                onChange={(e) => {
+                  let value = parseFloat(e.currentTarget.value);
+                  if (isNaN(value)) {
+                    value = 0;
+                  }
+                  setData((prevData) => ({
+                    ...prevData,
+                    [field.name]: value,
+                  }));
+                }}
+                value={data[field.name]}
+              />
+            </div>
+          );
+        }
+      })}
+      <div className={classNames.actions}>
+        <button
+          className={classNames.cancelButton}
+          type="button"
+          onClick={() => onCancel?.()}
+        >
+          Cancel
+        </button>
+        <button className={classNames.saveButton} type="submit">
+          Save
+        </button>
+      </div>
+    </form>
+  );
+};
