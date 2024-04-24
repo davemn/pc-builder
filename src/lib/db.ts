@@ -106,6 +106,7 @@ export interface MoboSchema {
   usb5Ports: number;
   usbSlowPorts: number;
   ethernetGigabitRate: number;
+  // TODO SATA ports
 }
 
 export interface CoolerSchema {
@@ -114,8 +115,10 @@ export interface CoolerSchema {
   name: string;
   price: number;
   type: string;
-  size: number;
+  size: string;
   fanDiameter: number;
+  // TODO TDP, Socket compatibility, fan count
+  // TODO split size into separate dimensions
 }
 
 export type Schema<T extends StoreName> = {
