@@ -6,3 +6,15 @@
 .activeButton {
   background-color: var(--accent100);
 }
+
+.selectContainer {
+  display: flex;
+  border: 2px solid var(--light80);
+  border-radius: 12px;
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}

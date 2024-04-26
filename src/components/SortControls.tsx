@@ -1,3 +1,4 @@
+import { ChevronDownIcon, XIcon } from "@primer/octicons-react";
 import { useEffect, useReducer, useRef } from "react";
 
 import { SortDirection, SortDirectionLabel } from "lib/constants";
@@ -156,20 +157,25 @@ export const SortControls = (props: SortControlProps) => {
   return (
     <Div.SortControls>
       {state.inactiveSortColumns.map((columnIndex) => (
-        <select
-          key={`inactive-${columnIndex}`}
-          name={state.allColumns[columnIndex].name}
-          defaultValue=""
-          onChange={(e) => {
-            const direction = e.target.value as SortDirection;
-            dispatch(SortControlActions.activate(columnIndex, direction));
-            sortChanged.current = true;
-          }}
-        >
-          <option value="">{state.allColumns[columnIndex].label}</option>
-          <option value={SortDirection.ASC}>Low to High</option>
-          <option value={SortDirection.DESC}>High to Low</option>
-        </select>
+        <Div.SelectContainer>
+          <select
+            key={`inactive-${columnIndex}`}
+            name={state.allColumns[columnIndex].name}
+            defaultValue=""
+            onChange={(e) => {
+              const direction = e.target.value as SortDirection;
+              dispatch(SortControlActions.activate(columnIndex, direction));
+              sortChanged.current = true;
+            }}
+          >
+            <option value="">{state.allColumns[columnIndex].label}</option>
+            <option value={SortDirection.ASC}>Low to High</option>
+            <option value={SortDirection.DESC}>High to Low</option>
+          </select>
+          <Div.IconContainer>
+            <ChevronDownIcon size="small" />
+          </Div.IconContainer>
+        </Div.SelectContainer>
       ))}
 
       {state.activeSortColumns.map(({ columnIndex, direction }) => (
@@ -182,7 +188,7 @@ export const SortControls = (props: SortControlProps) => {
           }}
         >
           Sort: {state.allColumns[columnIndex].label} (
-          {SortDirectionLabel[direction]})
+          {SortDirectionLabel[direction]}) <XIcon />
         </button>
       ))}
     </Div.SortControls>
