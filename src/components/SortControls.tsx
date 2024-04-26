@@ -38,6 +38,11 @@ interface SortControlDeactivateAction {
   payload: number;
 }
 
+interface SortControlResetAction {
+  type: "reset";
+  payload: Array<Column>;
+}
+
 const SortControlActions = {
   activate: (
     columnIndex: number,
@@ -50,11 +55,17 @@ const SortControlActions = {
     type: "deactivate" as const,
     payload: columnIndex,
   }),
+  reset: (columns: Array<Column>): SortControlResetAction => ({
+    type: "reset" as const,
+    payload: [...columns],
+  }),
 };
 
 const sortControlsReducer: React.Reducer<
   SortControlsState,
-  SortControlActivateAction | SortControlDeactivateAction
+  | SortControlActivateAction
+  | SortControlDeactivateAction
+  | SortControlResetAction
 > = (state, action) => {
   switch (action.type) {
     // lol block scope in switch
@@ -92,6 +103,16 @@ const sortControlsReducer: React.Reducer<
       };
     }
 
+    case "reset":
+      return {
+        allColumns: action.payload,
+        activeSortColumns: [],
+        inactiveSortColumns: Array.from(
+          { length: action.payload.length },
+          (_, i) => i
+        ),
+      };
+
     default:
       return state;
   }
@@ -114,7 +135,7 @@ export const SortControls = (props: SortControlProps) => {
     if (sortChanged.current) {
       onChangeSort(
         state.activeSortColumns.map(({ columnIndex, direction }) => ({
-          columnName: columns[columnIndex].name,
+          columnName: state.allColumns[columnIndex].name,
           direction,
         }))
       );
@@ -122,12 +143,22 @@ export const SortControls = (props: SortControlProps) => {
     }
   }, [state]);
 
+  // Update the internal state when the columns prop changes
+  useEffect(() => {
+    if (
+      state.allColumns.length !== columns.length ||
+      state.allColumns.some((column, i) => column.name !== columns[i].name)
+    ) {
+      dispatch(SortControlActions.reset(columns));
+    }
+  }, [columns]);
+
   return (
     <Div.SortControls>
       {state.inactiveSortColumns.map((columnIndex) => (
         <select
           key={`inactive-${columnIndex}`}
-          name={columns[columnIndex].name}
+          name={state.allColumns[columnIndex].name}
           defaultValue=""
           onChange={(e) => {
             const direction = e.target.value as SortDirection;
@@ -135,7 +166,7 @@ export const SortControls = (props: SortControlProps) => {
             sortChanged.current = true;
           }}
         >
-          <option value="">{columns[columnIndex].label}</option>
+          <option value="">{state.allColumns[columnIndex].label}</option>
           <option value={SortDirection.ASC}>Low to High</option>
           <option value={SortDirection.DESC}>High to Low</option>
         </select>
@@ -150,7 +181,8 @@ export const SortControls = (props: SortControlProps) => {
             sortChanged.current = true;
           }}
         >
-          Sort: {columns[columnIndex].label} ({SortDirectionLabel[direction]})
+          Sort: {state.allColumns[columnIndex].label} (
+          {SortDirectionLabel[direction]})
         </button>
       ))}
     </Div.SortControls>
