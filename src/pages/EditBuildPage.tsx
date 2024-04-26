@@ -2,7 +2,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
 import { SelectBuildComponent } from "components/SelectBuildComponent";
-import { BuildSchema, CpuSchema, MoboSchema, StoreName, db } from "lib/db";
+import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
+import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
 import { EditBuildPageProps, NavigateProp } from "lib/page";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
@@ -14,31 +15,101 @@ type Props = EditBuildPageProps & {
   navigate: NavigateProp;
 };
 
+interface BuildComponentSlotProps {
+  buildId: number;
+  componentType: BuildComponentStoreName;
+  selectedComponentType: BuildComponentStoreName | null;
+  selectedEdgeId: number | null;
+  onClick: (maybeEdgeId?: number) => void;
+}
+
+const BuildComponentSlot = (props: BuildComponentSlotProps) => {
+  const {
+    buildId,
+    componentType,
+    selectedComponentType,
+    selectedEdgeId,
+    onClick,
+  } = props;
+
+  const assignedSlots = useLiveQuery<
+    Array<{
+      edgeId: number;
+      component: Schema<BuildComponentStoreName>;
+    }>
+  >(async () => {
+    const edges = await db
+      .table("edges")
+      .where({
+        sourceId: buildId,
+        sourceType: "build",
+        targetType: componentType,
+      })
+      .toArray();
+
+    if (!edges || edges.length === 0) {
+      return [];
+    }
+
+    const components = await db
+      .table(componentType)
+      .where(":id")
+      .anyOf(edges.map((edge) => edge.targetId))
+      .toArray();
+
+    return edges.map((edge) => ({
+      edgeId: edge.id,
+      component: components.find((component) => component.id === edge.targetId),
+    }));
+  }, [buildId, componentType]);
+
+  return (
+    <Div.LabelledControl>
+      <label>{BuildComponentMeta[componentType].singularName}</label>
+      {(assignedSlots ?? []).map(({ edgeId, component }) => (
+        <button
+          key={component.id}
+          className={cx(
+            classNames,
+            selectedComponentType === componentType &&
+              selectedEdgeId === edgeId &&
+              "activeControl"
+          )}
+          onClick={() => onClick(edgeId)}
+          type="button"
+        >
+          {component.name}
+        </button>
+      ))}
+      <button
+        key="add"
+        className={cx(
+          classNames,
+          selectedComponentType === componentType &&
+            selectedEdgeId === null &&
+            "activeControl"
+        )}
+        onClick={() => onClick()}
+        type="button"
+      >
+        {`- Add ${BuildComponentMeta[componentType].singularName} -`}
+      </button>
+    </Div.LabelledControl>
+  );
+};
+
 export const EditBuildPage = (props: Props) => {
   const { buildId, navigate } = props;
 
   /* Sets the content pane */
-  const [activeTable, setActiveTable] = useState<StoreName | null>(null);
+  const [selectedComponentType, setSelectedComponentType] =
+    useState<BuildComponentStoreName | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
 
   const build = useLiveQuery<BuildSchema>(
     () => db.table("build").where({ id: buildId }).first(),
     [buildId]
   );
-
-  const buildCpu = useLiveQuery<CpuSchema>(async () => {
-    const cpuEdge = await db
-      .table("edges")
-      .where({ sourceId: buildId, sourceType: "build", targetType: "cpu" })
-      .first();
-
-    if (!cpuEdge) {
-      return undefined;
-    }
-
-    return db.table("cpu").where({ id: cpuEdge.targetId }).first();
-  }, [buildId]);
-
-  const buildMobo: MoboSchema | undefined = undefined;
 
   return (
     <Div.Container>
@@ -49,6 +120,7 @@ export const EditBuildPage = (props: Props) => {
         <span>$900</span>
       </nav>
       <Div.Sidebar>
+        {/* Build Name */}
         <div key="name" className={classNames.labelledControl}>
           <label>Name</label>
           <input
@@ -60,23 +132,45 @@ export const EditBuildPage = (props: Props) => {
             value={build?.name ?? ""}
           />
         </div>
-        <div key="cpu" className={classNames.labelledControl}>
-          <label>CPU</label>
-          <button
-            className={cx(
-              classNames,
-              "button",
-              activeTable === "cpu" && "activeControl"
-            )}
-            onClick={() => setActiveTable("cpu")}
-            type="button"
-          >
-            {buildCpu?.name || "<No CPU set>"}
-          </button>
-        </div>
+        {/* Build Components */}
+        <BuildComponentSlot
+          key="cpu"
+          buildId={buildId}
+          componentType="cpu"
+          selectedComponentType={selectedComponentType}
+          selectedEdgeId={selectedEdgeId}
+          onClick={(maybeEdgeId) => {
+            setSelectedComponentType("cpu");
+            setSelectedEdgeId(maybeEdgeId ?? null);
+          }}
+        />
+        <BuildComponentSlot
+          key="mobo"
+          buildId={buildId}
+          componentType="mobo"
+          selectedComponentType={selectedComponentType}
+          selectedEdgeId={selectedEdgeId}
+          onClick={(maybeEdgeId) => {
+            setSelectedComponentType("mobo");
+            setSelectedEdgeId(maybeEdgeId ?? null);
+          }}
+        />
       </Div.Sidebar>
       <Div.Content>
-        <SelectBuildComponent buildId={buildId} componentType={activeTable} />
+        {selectedComponentType === null ? (
+          <Div.EmptyStateText>
+            Select a component to add to the build
+          </Div.EmptyStateText>
+        ) : (
+          <SelectBuildComponent
+            buildId={buildId}
+            edgeId={selectedEdgeId}
+            componentType={selectedComponentType}
+            onRemove={() => {
+              setSelectedEdgeId(null);
+            }}
+          />
+        )}
       </Div.Content>
     </Div.Container>
   );

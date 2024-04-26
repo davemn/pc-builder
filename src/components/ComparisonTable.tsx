@@ -13,7 +13,7 @@ import classNames from "./ComparisonTable.module.css";
 /* These are each preemptively populated for every class, but only a few mappings will be used. */
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
-interface ComparisonTableProps<T extends StoreName> {
+export interface ComparisonTableProps<T extends StoreName> {
   dataStoreName: T;
   dataStoreLabel: string;
   columns: Array<ColumnDefinition<T>>;
@@ -213,6 +213,9 @@ export const ComparisonTable = <T extends StoreName>(
 
     return [selectedRow, unselectedRows, incompatibleRows];
   }, [selectedRowId, allRows, getIsBuildCompatible]);
+
+  // TODO combine useLiveQuery and useMemo (return the memo value from useLiveQuery)
+  // Otherwise the row state is stale when the table is re-rendered when dataStoreName changes
 
   const handleEdit = (row: Schema<T>) => {
     setEditRow(row);
