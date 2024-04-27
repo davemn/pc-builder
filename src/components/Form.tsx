@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
+import { Button } from "components/Button";
 import { db } from "lib/db";
 
 import classNames from "./Form.module.css";
@@ -36,6 +37,7 @@ interface SelectProps {
   multiple?: boolean;
 }
 
+/** @deprecated */
 const StoredSelect = (props: SelectProps) => {
   const { tableName, label, multiple = false } = props;
 
@@ -55,9 +57,13 @@ const StoredSelect = (props: SelectProps) => {
             </option>
           ))}
         </select>
-        <button className={classNames.addButton} type="button">
+        <Button
+          className={classNames.addButton}
+          type="button"
+          onClick={() => {}}
+        >
           +
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -153,16 +159,16 @@ export const Form = (props: FormProps) => {
         }
       })}
       <div className={classNames.actions}>
-        <button
+        <Button
           className={classNames.cancelButton}
           type="button"
           onClick={() => onCancel?.()}
         >
           Cancel
-        </button>
-        <button className={classNames.saveButton} type="submit">
+        </Button>
+        <Button className={classNames.saveButton} type="submit">
           Save
-        </button>
+        </Button>
       </div>
     </form>
   );

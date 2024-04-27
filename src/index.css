@@ -92,23 +92,6 @@ button {
   border: none;
 }
 
-button {
-  background-color: transparent;
-  border: 2px solid var(--accent100);
-  border-radius: 12px;
-  color: var(--light100);
-  font-size: 0.8rem;
-  font-family: inherit;
-  padding: 8px 12px;
-}
-button:hover {
-  cursor: pointer;
-}
-button:active {
-  background-color: var(--accent100);
-  /* color: var(--dark10); */
-}
-
 select {
   appearance: none;
   background-color: transparent;

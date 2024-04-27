@@ -2,12 +2,6 @@ import Dexie, { Table } from "dexie";
 
 const DATABASE_NAME = "PCBuilder";
 
-// export interface Friend {
-//   id?: number;
-//   name: string;
-//   age: number;
-// }
-
 export type StoreName =
   | "edges"
   | "build"
@@ -134,10 +128,6 @@ export type Schema<T extends StoreName> = {
 }[T];
 
 export class BrowserDatabase extends Dexie {
-  // 'friends' is added by dexie when declaring the stores()
-  // We just tell the typing system this is the case
-  // friends!: Table<Friend>;
-
   constructor() {
     super(DATABASE_NAME);
     this.version(1).stores({

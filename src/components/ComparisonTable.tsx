@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useMemo, useState } from "react";
 
+import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
 import { Modal } from "components/Modal";
 import { SortControls } from "components/SortControls";
@@ -150,16 +151,16 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
           ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
         }}
       >
-        <button onClick={() => onEdit(row.id)}>Edit</button>
+        <Button onClick={() => onEdit(row.id)}>Edit</Button>
         {onRemove && (
-          <button
-            style={{ border: 0, backgroundColor: "var(--accent100)" }}
+          <Button
             onClick={() => onRemove(row.id)}
+            variant={ButtonVariant.ACTIVE}
           >
             Remove
-          </button>
+          </Button>
         )}
-        {onSelect && <button onClick={() => onSelect(row.id)}>Select</button>}
+        {onSelect && <Button onClick={() => onSelect(row.id)}>Select</Button>}
       </Div.Cell>
     </>
   );
@@ -243,7 +244,7 @@ export const ComparisonTable = <T extends StoreName>(
       )}
 
       <Div.TableFilters>
-        <button onClick={() => setAddModalOpen(true)}>Add</button>
+        <Button onClick={() => setAddModalOpen(true)}>Add</Button>
         <SortControls columns={columns} onChangeSort={setSortBy} />
       </Div.TableFilters>
 

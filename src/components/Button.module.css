@@ -1,0 +1,28 @@
+.button {
+  background-color: transparent;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 8px 12px;
+}
+
+.button:hover {
+  cursor: pointer;
+}
+
+.variantDefault {
+  border-color: 2px solid var(--light80);
+  color: var(--light90);
+}
+.variantDefault:active {
+  background-color: var(--accent100);
+  color: var(--light100);
+}
+
+.variantActive {
+  background-color: var(--accent100);
+  border-width: 0;
+  color: var(--light100);
+}

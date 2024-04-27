@@ -3,10 +3,6 @@
   gap: 12px;
 }
 
-.activeButton {
-  background-color: var(--accent100);
-}
-
 .selectContainer {
   display: flex;
   border: 2px solid var(--light80);

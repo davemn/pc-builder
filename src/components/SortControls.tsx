@@ -1,6 +1,7 @@
 import { ChevronDownIcon, XIcon } from "@primer/octicons-react";
 import { useEffect, useReducer, useRef } from "react";
 
+import { Button, ButtonVariant } from "components/Button";
 import { SortDirection, SortDirectionLabel } from "lib/constants";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -179,17 +180,17 @@ export const SortControls = (props: SortControlProps) => {
       ))}
 
       {state.activeSortColumns.map(({ columnIndex, direction }) => (
-        <button
+        <Button
           key={`active-${columnIndex}`}
-          className={classNames.activeButton}
           onClick={() => {
             dispatch(SortControlActions.deactivate(columnIndex));
             sortChanged.current = true;
           }}
+          variant={ButtonVariant.ACTIVE}
         >
           Sort: {state.allColumns[columnIndex].label} (
           {SortDirectionLabel[direction]}) <XIcon />
-        </button>
+        </Button>
       ))}
     </Div.SortControls>
   );
