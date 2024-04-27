@@ -120,7 +120,12 @@ export const EditBuildPage = (props: Props) => {
   return (
     <Div.Container>
       <nav className={classNames.nav}>
-        <Button className={classNames.backButton}>Back</Button>
+        <Button
+          className={classNames.backButton}
+          onClick={() => navigate("builds", {})}
+        >
+          Back
+        </Button>
         <h1>Edit build</h1>
         <span>Build Price</span>
         <span>$900</span>
