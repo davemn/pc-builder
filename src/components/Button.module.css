@@ -3,7 +3,7 @@
   border-width: 2px;
   border-style: solid;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: var(--fontSizeBody);
   font-family: inherit;
   padding: 8px 12px;
 }

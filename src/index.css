@@ -22,6 +22,10 @@
 
   --positive100: #70ce68;
   --negative100: #e3766f;
+
+  --fontSizeTitle: 28px;
+  --fontSizeHeading: 22px;
+  --fontSizeBody: 16px;
 }
 
 body {
@@ -29,7 +33,7 @@ body {
 
   background-color: var(--dark0);
   color: var(--light100);
-  font-size: 20px;
+  font-size: var(--fontSizeBody);
   font-family: Lato, sans-serif;
 }
 
@@ -79,6 +83,15 @@ h1,
 h2,
 h3 {
   margin: 0;
+  font-weight: normal;
+}
+
+h1 {
+  font-size: var(--fontSizeTitle);
+}
+h2,
+h3 {
+  font-size: var(--fontSizeHeading);
 }
 
 input,
@@ -97,7 +110,7 @@ select {
   background-color: transparent;
   border: none;
   color: var(--light100);
-  font-size: 0.8rem;
+  font-size: var(--fontSizeBody);
   font-family: inherit;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -109,7 +122,7 @@ input {
   background-color: transparent;
   border-bottom: 1px solid var(--light80);
   color: var(--light100);
-  font-size: 1.1rem;
+  font-size: var(--fontSizeHeading);
   padding: 12px 10px;
 }
 input:focus-visible {

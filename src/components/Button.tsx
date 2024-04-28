@@ -46,7 +46,7 @@ export const Button = (props: ButtonProps) => {
         "button",
         variant === ButtonVariant.DEFAULT && "variantDefault",
         variant === ButtonVariant.ACTIVE && "variantActive"
-      )} ${classNameProp}`}
+      )} ${classNameProp ?? ""}`}
       onClick={onClick}
       type={type}
     >

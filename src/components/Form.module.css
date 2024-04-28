@@ -12,7 +12,7 @@
 }
 
 .fieldContainer > label {
-  font-size: 1rem;
+  font-size: var(--fontSizeHeading);
   color: var(--light90);
 }
 
