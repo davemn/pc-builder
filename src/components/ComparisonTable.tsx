@@ -231,7 +231,15 @@ export const ComparisonTable = <T extends StoreName>(
 
   return (
     <Div.Container>
-      <h2 className={classNames.tableName}>{dataStoreLabel}</h2>
+      <Div.TableName>
+        <h2>{dataStoreLabel}</h2>
+        <Button
+          onClick={() => setAddModalOpen(true)}
+          variant={ButtonVariant.ACTIVE}
+        >
+          Add
+        </Button>
+      </Div.TableName>
 
       {selectedRow && (
         <Div.SelectedRow
@@ -250,7 +258,6 @@ export const ComparisonTable = <T extends StoreName>(
       )}
 
       <Div.TableFilters>
-        <Button onClick={() => setAddModalOpen(true)}>Add</Button>
         <SortControls columns={columns} onChangeSort={setSortBy} />
       </Div.TableFilters>
 
@@ -323,7 +330,7 @@ export const ComparisonTable = <T extends StoreName>(
 
       {addModalOpen && (
         <Modal>
-          <h2>Add</h2>
+          <h2 className={classNames.modalTitle}>Add</h2>
           <Form
             schema={columns.map((column) => ({
               type: column.unit.dataType,
@@ -348,7 +355,7 @@ export const ComparisonTable = <T extends StoreName>(
 
       {editModalOpen && editRow && (
         <Modal>
-          <h2>Edit</h2>
+          <h2 className={classNames.modalTitle}>Edit</h2>
           <Form
             initialData={
               editRow as Record<Extract<keyof T, string>, number | string>

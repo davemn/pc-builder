@@ -5,6 +5,9 @@
 
 .tableName {
   margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .selectedRow {
@@ -13,32 +16,14 @@
 }
 
 .tableFilters {
-  /* background-color: var(--dark10); */
   min-height: 36px;
   margin-bottom: 8px;
-
-  display: flex;
-}
-
-.tableFilters > :first-child {
-  margin-right: auto;
 }
 
 .table {
   display: grid;
   margin-bottom: 65px;
 }
-
-/* grid-column: 1 / 2; */
-
-/* .row {
-  display: flex;
-  flex-direction: row;
-  padding: 0 20px;
-  align-items: center;
-
-  background-color: var(--dark10);
-} */
 
 .row:not(:first-child) {
   border-top: 1px solid var(--dark0);
@@ -61,14 +46,7 @@
 
 .cellName {
   color: var(--light80);
-  /* text-align: center; */
-
-  /* Body */
-  /* font-family: Lato; */
   font-size: 16px;
-  /* font-style: normal;
-  font-weight: 400;
-  line-height: normal; */
 }
 
 .cellValueNeutral {
@@ -96,4 +74,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.modalTitle {
+  font-size: var(--fontSizeTitle);
+  margin-bottom: 20px;
 }
