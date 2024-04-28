@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
-import { Button } from "components/Button";
+import { Button, ButtonVariant } from "components/Button";
 import { db } from "lib/db";
 
 import classNames from "./Form.module.css";
@@ -159,14 +159,8 @@ export const Form = (props: FormProps) => {
         }
       })}
       <div className={classNames.actions}>
-        <Button
-          className={classNames.cancelButton}
-          type="button"
-          onClick={() => onCancel?.()}
-        >
-          Cancel
-        </Button>
-        <Button className={classNames.saveButton} type="submit">
+        <Button onClick={() => onCancel?.()}>Cancel</Button>
+        <Button type="submit" variant={ButtonVariant.ACTIVE}>
           Save
         </Button>
       </div>
