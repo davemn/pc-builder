@@ -1,11 +1,12 @@
 import { useLiveQuery } from "dexie-react-hooks";
+import { useEffect, useState } from "react";
 
 import {
   ComparisonTable,
   ComparisonTableProps,
 } from "components/ComparisonTable";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { EdgeSchema, db } from "lib/db";
+import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./SelectBuildComponent.module.css";
@@ -17,7 +18,7 @@ interface SelectBuildComponentProps {
   componentType: BuildComponentStoreName;
   edgeId: number | null;
   onRemove: () => void;
-  onSelect?: (componentId: number) => void;
+  onSelect: (edgeId: number) => void;
 }
 
 // From https://stackoverflow.com/a/51691257
@@ -29,7 +30,7 @@ type AnyComparisonTableProps = Distribute<BuildComponentStoreName>;
 
 function getTableProps<T extends BuildComponentStoreName>(
   componentType: T
-): Omit<ComparisonTableProps<T>, "onRemove" | "onSelect"> {
+): Omit<ComparisonTableProps<T>, "onEditSelected" | "onRemove" | "onSelect"> {
   const componentMeta = BuildComponentMeta[componentType];
 
   return {
@@ -43,9 +44,9 @@ function getTableProps<T extends BuildComponentStoreName>(
 export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
   const { componentType, buildId, edgeId, onRemove, onSelect } = props;
 
-  // Convert edgeId -> componentId
-  const selectedBuildComponentId = useLiveQuery<
-    number | undefined
+  // Convert edgeId -> component
+  const selectedBuildComponent = useLiveQuery<
+    Schema<BuildComponentStoreName> | undefined
   >(async () => {
     if (edgeId === null) {
       return;
@@ -57,41 +58,85 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
       return;
     }
 
-    return edge.targetId;
+    const targetId = edge.targetId;
+    const component = await db
+      .table<Schema<BuildComponentStoreName>>(componentType)
+      .get(targetId);
+
+    return component;
   }, [edgeId]);
 
   return (
     <ComparisonTable
       {...getTableProps(componentType)}
-      onRemove={async () => {
-        await db.transaction("rw", ["edges"], async (tx) => {
+      onEditSelected={async (prevComponent, component) => {
+        // update build price
+        await db.transaction("rw", ["build"], async (tx) => {
+          const build = await tx.table<BuildSchema>("build").get(buildId);
+          if (build) {
+            build.price -= prevComponent.price;
+            build.price += component.price;
+            await tx.table("build").update(buildId, { price: build.price });
+          }
+        });
+      }}
+      onRemove={async (component) => {
+        await db.transaction("rw", ["edges", "build"], async (tx) => {
           await tx
             .table("edges")
             .where({
               id: edgeId,
             })
             .delete();
-        });
-        onRemove();
-      }}
-      onSelect={async (componentId) => {
-        await db.transaction("rw", ["edges"], async (tx) => {
-          if (edgeId === null) {
-            await tx.table("edges").add({
-              sourceId: buildId,
-              sourceType: "build",
-              targetId: componentId,
-              targetType: componentType,
-            });
-          } else {
-            await tx.table("edges").update(edgeId, {
-              targetId: componentId,
-            });
+
+          // update build price
+          const build = await tx.table<BuildSchema>("build").get(buildId);
+          if (build) {
+            build.price -= component.price;
+            await tx.table("build").update(buildId, { price: build.price });
           }
         });
-        onSelect?.(componentId);
+
+        onRemove();
       }}
-      selectedRowId={selectedBuildComponentId}
+      onSelect={async (prevComponent, component) => {
+        const selectedEdgeId = await db.transaction(
+          "rw",
+          ["edges", "build"],
+          async (tx) => {
+            let newEdgeId: number;
+
+            if (edgeId === null) {
+              newEdgeId = await tx
+                .table<Omit<EdgeSchema, "id">, number>("edges")
+                .add({
+                  sourceId: buildId,
+                  sourceType: "build",
+                  targetId: component.id,
+                  targetType: componentType,
+                });
+            } else {
+              newEdgeId = edgeId;
+              await tx.table("edges").update(edgeId, {
+                targetId: component.id,
+              });
+            }
+
+            // update build price
+            const build = await tx.table<BuildSchema>("build").get(buildId);
+            if (build) {
+              build.price -= prevComponent?.price ?? 0;
+              build.price += component.price;
+              await tx.table("build").update(buildId, { price: build.price });
+            }
+
+            return newEdgeId;
+          }
+        );
+
+        onSelect(selectedEdgeId);
+      }}
+      selectedRowId={selectedBuildComponent?.id}
     />
   );
 };

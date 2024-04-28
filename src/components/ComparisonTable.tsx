@@ -19,8 +19,9 @@ export interface ComparisonTableProps<T extends StoreName> {
   dataStoreLabel: string;
   columns: Array<ColumnDefinition<T>>;
   getIsBuildCompatible: (row: Schema<T>) => boolean;
-  onRemove?: (id: number) => void;
-  onSelect: (id: number) => void;
+  onEditSelected: (previousRow: Schema<T>, row: Schema<T>) => void;
+  onRemove: (row: Schema<T>) => void;
+  onSelect: (previousRow: Schema<T> | null, row: Schema<T>) => void;
   selectedRowId?: number;
   style?: React.CSSProperties;
 }
@@ -174,6 +175,7 @@ export const ComparisonTable = <T extends StoreName>(
     dataStoreLabel,
     columns,
     getIsBuildCompatible,
+    onEditSelected,
     onRemove,
     onSelect,
     selectedRowId,
@@ -186,6 +188,7 @@ export const ComparisonTable = <T extends StoreName>(
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editRow, setEditRow] = useState<Schema<T>>();
+  const [isEditingSelectedRow, setIsEditingSelectedRow] = useState(false);
 
   const allRows = useLiveQuery<Array<Schema<T>>, Array<never>>(
     async () => {
@@ -218,9 +221,12 @@ export const ComparisonTable = <T extends StoreName>(
   // TODO combine useLiveQuery and useMemo (return the memo value from useLiveQuery)
   // Otherwise the row state is stale when the table is re-rendered when dataStoreName changes
 
-  const handleEdit = (row: Schema<T>) => {
-    setEditRow(row);
+  const handleEdit = (row: Schema<T>, editingSelected = false) => {
     setEditModalOpen(true);
+    setEditRow(row);
+    if (editingSelected) {
+      setIsEditingSelectedRow(true);
+    }
   };
 
   return (
@@ -235,8 +241,8 @@ export const ComparisonTable = <T extends StoreName>(
         >
           <TableRow
             columns={columns}
-            onEdit={() => handleEdit(selectedRow)}
-            onRemove={onRemove}
+            onEdit={() => handleEdit(selectedRow, true)}
+            onRemove={() => onRemove(selectedRow)}
             row={selectedRow}
             rowIndex={0}
           />
@@ -261,7 +267,7 @@ export const ComparisonTable = <T extends StoreName>(
             columns={columns}
             compareToRow={selectedRow}
             onEdit={() => handleEdit(row)}
-            onSelect={onSelect}
+            onSelect={() => onSelect(selectedRow ?? null, row)}
             row={row}
             rowIndex={rowI}
           />
@@ -364,6 +370,11 @@ export const ComparisonTable = <T extends StoreName>(
               }
 
               await db.table(dataStoreName).update(editRow.id, data);
+
+              if (isEditingSelectedRow) {
+                onEditSelected(editRow, { ...editRow, ...data } as Schema<T>);
+                setIsEditingSelectedRow(false);
+              }
 
               setEditRow(undefined);
               setEditModalOpen(false);

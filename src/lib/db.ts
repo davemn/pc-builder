@@ -24,6 +24,7 @@ export interface EdgeSchema {
 export interface BuildSchema {
   id: number;
   name: string;
+  price: number;
 }
 
 export interface CpuSchema {
@@ -146,6 +147,18 @@ export class BrowserDatabase extends Dexie {
       // TODO customize these
       // case: "++id, brand, name, price, formFactor, frontUsbPorts, frontAudioPorts, driveBays, maxGpuLength, maxCpuCoolerHeight, maxPsuLength, maxRadiatorLength, maxRadiatorWidth, maxRadiatorHeight, maxFanLength, maxFanWidth, maxFanHeight, maxFanCount, maxDustFilterCount",
     });
+    this.version(2)
+      .stores({
+        build: "++id, name, price",
+      })
+      .upgrade((tx) => {
+        return tx
+          .table<BuildSchema>("build")
+          .toCollection()
+          .modify((build) => {
+            build.price = 0;
+          });
+      });
   }
 }
 

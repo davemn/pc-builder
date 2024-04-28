@@ -41,13 +41,12 @@ export const Button = (props: ButtonProps) => {
 
   return (
     <button
-      className={cx(
+      className={`${cx(
         classNames,
         "button",
         variant === ButtonVariant.DEFAULT && "variantDefault",
-        variant === ButtonVariant.ACTIVE && "variantActive",
-        classNameProp ?? false
-      )}
+        variant === ButtonVariant.ACTIVE && "variantActive"
+      )} ${classNameProp}`}
       onClick={onClick}
       type={type}
     >

@@ -72,12 +72,11 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
       {(assignedSlots ?? []).map(({ edgeId, component }) => (
         <Button
           key={component.id}
-          className={cx(
-            classNames,
-            selectedComponentType === componentType &&
-              selectedEdgeId === edgeId &&
-              "activeControl"
-          )}
+          className={
+            selectedComponentType === componentType && selectedEdgeId === edgeId
+              ? classNames.activeControl
+              : undefined
+          }
           onClick={() => onClick(edgeId)}
           type="button"
           variant={ButtonVariant.ACTIVE}
@@ -88,12 +87,11 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
       {((assignedSlots ?? []).length === 0 || multiple) && (
         <Button
           key="add"
-          className={cx(
-            classNames,
-            selectedComponentType === componentType &&
-              selectedEdgeId === null &&
-              "activeControl"
-          )}
+          className={
+            selectedComponentType === componentType && selectedEdgeId === null
+              ? classNames.activeControl
+              : undefined
+          }
           onClick={() => onClick()}
           type="button"
         >
@@ -126,9 +124,29 @@ export const EditBuildPage = (props: Props) => {
         >
           Back
         </Button>
+        <Button
+          onClick={async () => {
+            await db.transaction("rw", ["edges", "build"], async (tx) => {
+              // Remove all assigned edges from the build
+              await tx
+                .table<EdgeSchema>("edges")
+                .where({
+                  sourceId: buildId,
+                  sourceType: "build",
+                })
+                .delete();
+              // Reset price
+              await db.table("build").update(buildId, { price: 0 });
+            });
+          }}
+        >
+          Reset
+        </Button>
         <h1>Edit build</h1>
         <span>Build Price</span>
-        <span>$900</span>
+        {build && (
+          <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
+        )}
       </nav>
       <Div.Sidebar>
         {/* Build Name */}
@@ -235,6 +253,9 @@ export const EditBuildPage = (props: Props) => {
             componentType={selectedComponentType}
             onRemove={() => {
               setSelectedEdgeId(null);
+            }}
+            onSelect={(edgeId) => {
+              setSelectedEdgeId(edgeId);
             }}
           />
         )}

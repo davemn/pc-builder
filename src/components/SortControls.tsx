@@ -158,9 +158,8 @@ export const SortControls = (props: SortControlProps) => {
   return (
     <Div.SortControls>
       {state.inactiveSortColumns.map((columnIndex) => (
-        <Div.SelectContainer>
+        <Div.SelectContainer key={`inactive-${columnIndex}`}>
           <select
-            key={`inactive-${columnIndex}`}
             name={state.allColumns[columnIndex].name}
             defaultValue=""
             onChange={(e) => {

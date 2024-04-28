@@ -2,7 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { ComparisonTable } from "components/ComparisonTable";
 import { BuildColumns } from "lib/columns";
-import { db } from "lib/db";
+import { BuildSchema, db } from "lib/db";
 import { BuildsPageProps, NavigateProp } from "lib/page";
 
 import classNames from "./BuildsPage.module.css";
@@ -26,8 +26,14 @@ export const BuildsPage = (props: Props) => {
         dataStoreLabel="Builds"
         columns={BuildColumns}
         getIsBuildCompatible={() => true}
-        onSelect={(buildId) => {
-          navigate("editBuild", { buildId });
+        onEditSelected={(previousRow: BuildSchema, row: BuildSchema) => {
+          throw new Error("Function not implemented.");
+        }}
+        onRemove={(row: BuildSchema) => {
+          throw new Error("Function not implemented.");
+        }}
+        onSelect={(prevSelectedBuild, selectedBuild) => {
+          navigate("editBuild", { buildId: selectedBuild.id });
         }}
         style={{
           minWidth: 800,

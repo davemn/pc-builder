@@ -26,6 +26,16 @@
   width: auto;
 }
 
+.buildPrice {
+  padding: 8px 20px;
+  border-radius: 12px;
+
+  background-color: var(--accent100);
+  color: var(--light100);
+
+  font-size: 1.4rem;
+}
+
 .sidebar {
   grid-column: 1 / 2;
   padding: 20px;
