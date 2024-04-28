@@ -137,7 +137,6 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
           key={`${row.id}-${column.name}`}
           style={{
             ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
-            ...(columnI === 0 ? { gridColumn: "span 2" } : {}),
           }}
         >
           {column.name !== "name" && (
@@ -242,19 +241,21 @@ export const ComparisonTable = <T extends StoreName>(
       </Div.TableName>
 
       {selectedRow && (
-        <Div.SelectedRow
-          style={{
-            gridTemplateColumns: `1fr repeat(${columns.length}, 1fr) auto`,
-          }}
-        >
-          <TableRow
-            columns={columns}
-            onEdit={() => handleEdit(selectedRow, true)}
-            onRemove={() => onRemove(selectedRow)}
-            row={selectedRow}
-            rowIndex={0}
-          />
-        </Div.SelectedRow>
+        <Div.ScrollContainer>
+          <Div.SelectedRow
+            style={{
+              gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+            }}
+          >
+            <TableRow
+              columns={columns}
+              onEdit={() => handleEdit(selectedRow, true)}
+              onRemove={() => onRemove(selectedRow)}
+              row={selectedRow}
+              rowIndex={0}
+            />
+          </Div.SelectedRow>
+        </Div.ScrollContainer>
       )}
 
       <Div.TableFilters>
@@ -262,38 +263,40 @@ export const ComparisonTable = <T extends StoreName>(
       </Div.TableFilters>
 
       {/* Rows that are compatible with the current build */}
-      <Div.Table
-        style={{
-          gridTemplateColumns: `1fr repeat(${columns.length}, 1fr) auto`,
-          ...style,
-        }}
-      >
-        {unselectedRows.map((row, rowI) => (
-          <TableRow
-            key={row.id}
-            columns={columns}
-            compareToRow={selectedRow}
-            onEdit={() => handleEdit(row)}
-            onSelect={() => onSelect(selectedRow ?? null, row)}
-            row={row}
-            rowIndex={rowI}
-          />
-        ))}
-        {allRows.length === 0 && (
-          <Div.EmptyState
-            style={{ gridColumn: `1 / span ${columns.length + 2}` }}
-          >
-            Nothing added
-          </Div.EmptyState>
-        )}
-        {selectedRow && unselectedRows.length === 0 && (
-          <Div.EmptyState
-            style={{ gridColumn: `1 / span ${columns.length + 2}` }}
-          >
-            No compatible components to compare
-          </Div.EmptyState>
-        )}
-      </Div.Table>
+      <Div.ScrollContainer>
+        <Div.Table
+          style={{
+            gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+            ...style,
+          }}
+        >
+          {unselectedRows.map((row, rowI) => (
+            <TableRow
+              key={row.id}
+              columns={columns}
+              compareToRow={selectedRow}
+              onEdit={() => handleEdit(row)}
+              onSelect={() => onSelect(selectedRow ?? null, row)}
+              row={row}
+              rowIndex={rowI}
+            />
+          ))}
+          {allRows.length === 0 && (
+            <Div.EmptyState
+              style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+            >
+              Nothing added
+            </Div.EmptyState>
+          )}
+          {selectedRow && unselectedRows.length === 0 && (
+            <Div.EmptyState
+              style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+            >
+              No compatible components to compare
+            </Div.EmptyState>
+          )}
+        </Div.Table>
+      </Div.ScrollContainer>
 
       {/* Rows that are incompatible with the current build */}
       {incompatibleRows.length > 0 && (
@@ -301,30 +304,32 @@ export const ComparisonTable = <T extends StoreName>(
           <h2 className={classNames.tableName}>
             Incompatible {dataStoreLabel}
           </h2>
-          <Div.Table
-            style={{
-              gridTemplateColumns: `1fr repeat(${columns.length}, 1fr) auto`,
-              ...style,
-            }}
-          >
-            {incompatibleRows.map((row, rowI) => (
-              <TableRow
-                key={row.id}
-                columns={columns}
-                compareToRow={selectedRow}
-                onEdit={() => handleEdit(row)}
-                row={row}
-                rowIndex={rowI}
-              />
-            ))}
-            {allRows.length === 0 && (
-              <Div.EmptyState
-                style={{ gridColumn: `1 / span ${columns.length + 2}` }}
-              >
-                Nothing added
-              </Div.EmptyState>
-            )}
-          </Div.Table>
+          <Div.ScrollContainer>
+            <Div.Table
+              style={{
+                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+                ...style,
+              }}
+            >
+              {incompatibleRows.map((row, rowI) => (
+                <TableRow
+                  key={row.id}
+                  columns={columns}
+                  compareToRow={selectedRow}
+                  onEdit={() => handleEdit(row)}
+                  row={row}
+                  rowIndex={rowI}
+                />
+              ))}
+              {allRows.length === 0 && (
+                <Div.EmptyState
+                  style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+                >
+                  Nothing added
+                </Div.EmptyState>
+              )}
+            </Div.Table>
+          </Div.ScrollContainer>
         </>
       )}
 

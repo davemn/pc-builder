@@ -10,9 +10,14 @@
   align-items: center;
 }
 
+.scrollContainer {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 65px;
+}
+
 .selectedRow {
   display: grid;
-  margin-bottom: 65px;
 }
 
 .tableFilters {
@@ -22,7 +27,6 @@
 
 .table {
   display: grid;
-  margin-bottom: 65px;
 }
 
 .row:not(:first-child) {
