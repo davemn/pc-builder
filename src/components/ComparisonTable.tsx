@@ -145,7 +145,7 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
           {renderCellValue(column)}
         </Div.Cell>
       ))}
-      <Div.Cell
+      <Div.ActionCell
         key={`${row.id}-actions}`}
         style={{
           ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
@@ -161,7 +161,7 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
           </Button>
         )}
         {onSelect && <Button onClick={() => onSelect(row.id)}>Select</Button>}
-      </Div.Cell>
+      </Div.ActionCell>
     </>
   );
 };
@@ -244,7 +244,7 @@ export const ComparisonTable = <T extends StoreName>(
         <Div.ScrollContainer>
           <Div.SelectedRow
             style={{
-              gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+              gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
             }}
           >
             <TableRow
@@ -266,7 +266,7 @@ export const ComparisonTable = <T extends StoreName>(
       <Div.ScrollContainer>
         <Div.Table
           style={{
-            gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+            gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
             ...style,
           }}
         >
@@ -307,7 +307,7 @@ export const ComparisonTable = <T extends StoreName>(
           <Div.ScrollContainer>
             <Div.Table
               style={{
-                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) min-content`,
+                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
                 ...style,
               }}
             >
