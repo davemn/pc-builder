@@ -7,6 +7,11 @@ export enum ButtonVariant {
   DEFAULT,
 }
 
+export enum ButtonSize {
+  NORMAL,
+  LARGE,
+}
+
 // interface ButtonProps {
 //   children: React.ReactNode;
 //   className?: string;
@@ -18,6 +23,7 @@ export enum ButtonVariant {
 type ButtonProps = {
   children: React.ReactNode;
   className?: string;
+  size?: ButtonSize;
   variant?: ButtonVariant;
 } & (
   | {
@@ -35,6 +41,7 @@ export const Button = (props: ButtonProps) => {
     children,
     className: classNameProp,
     onClick,
+    size = ButtonSize.NORMAL,
     type = "button",
     variant = ButtonVariant.DEFAULT,
   } = props;
@@ -44,6 +51,8 @@ export const Button = (props: ButtonProps) => {
       className={`${cx(
         classNames,
         "button",
+        size === ButtonSize.NORMAL && "sizeNormal",
+        size === ButtonSize.LARGE && "sizeLarge",
         variant === ButtonVariant.DEFAULT && "variantDefault",
         variant === ButtonVariant.ACTIVE && "variantActive"
       )} ${classNameProp ?? ""}`}

@@ -10,11 +10,6 @@
   /* row-gap: 10px; */
 }
 
-.fieldContainer > label {
-  font-size: var(--fontSizeHeading);
-  color: var(--light90);
-}
-
 .selectContainer {
   display: flex;
   column-gap: 10px;

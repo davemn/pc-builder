@@ -25,6 +25,7 @@
 
   --fontSizeTitle: 28px;
   --fontSizeHeading: 22px;
+  --fontSizeLabel: 20px;
   --fontSizeBody: 16px;
 }
 
@@ -88,6 +89,7 @@ h3 {
 
 h1 {
   font-size: var(--fontSizeTitle);
+  font-weight: bold;
 }
 h2,
 h3 {
@@ -109,7 +111,7 @@ select {
   appearance: none;
   background-color: transparent;
   border: none;
-  color: var(--light100);
+  color: var(--light90);
   font-size: var(--fontSizeBody);
   font-family: inherit;
   padding-top: 8px;
@@ -135,4 +137,9 @@ input:focus-visible {
   border-radius: 4px;
   color: var(--dark0); 
   */
+}
+
+label {
+  font-size: var(--fontSizeLabel);
+  color: var(--light90);
 }

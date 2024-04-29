@@ -1,12 +1,12 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
-import { Button, ButtonVariant } from "components/Button";
+import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
 import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
 import { EditBuildPageProps, NavigateProp } from "lib/page";
-import { cx, makeClassNamePrimitives } from "lib/styles";
+import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./EditBuildPage.module.css";
 
@@ -121,6 +121,7 @@ export const EditBuildPage = (props: Props) => {
         <Button
           className={classNames.backButton}
           onClick={() => navigate("builds", {})}
+          size={ButtonSize.LARGE}
         >
           Back
         </Button>
@@ -143,7 +144,7 @@ export const EditBuildPage = (props: Props) => {
           Reset
         </Button>
         <h1>Edit build</h1>
-        <span>Build Price</span>
+        <h2>Build Price</h2>
         {build && (
           <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
         )}
