@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
+import { Layout } from "components/Layout";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
 import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
@@ -116,138 +117,140 @@ export const EditBuildPage = (props: Props) => {
   );
 
   return (
-    <Div.Container>
-      <nav className={classNames.nav}>
-        <Button
-          className={classNames.backButton}
-          onClick={() => navigate("builds", {})}
-          size={ButtonSize.LARGE}
-        >
-          Back
-        </Button>
-        <Button
-          onClick={async () => {
-            await db.transaction("rw", ["edges", "build"], async (tx) => {
-              // Remove all assigned edges from the build
-              await tx
-                .table<EdgeSchema>("edges")
-                .where({
-                  sourceId: buildId,
-                  sourceType: "build",
-                })
-                .delete();
-              // Reset price
-              await db.table("build").update(buildId, { price: 0 });
-            });
-          }}
-        >
-          Reset
-        </Button>
-        <h1>Edit build</h1>
-        <h2>Build Price</h2>
-        {build && (
-          <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
-        )}
-      </nav>
-      <Div.Sidebar>
-        {/* Build Name */}
-        <div key="name" className={classNames.labelledControl}>
-          <label>Name</label>
-          <input
-            type="text"
-            name="name"
-            onChange={(e) => {
-              db.table("build").update(buildId, { name: e.target.value });
+    <Layout
+      nav={
+        <>
+          <Button
+            key="back"
+            className={classNames.backButton}
+            onClick={() => navigate("builds", {})}
+            size={ButtonSize.LARGE}
+          >
+            Back
+          </Button>
+          <Button
+            key="reset"
+            onClick={async () => {
+              await db.transaction("rw", ["edges", "build"], async (tx) => {
+                // Remove all assigned edges from the build
+                await tx
+                  .table<EdgeSchema>("edges")
+                  .where({
+                    sourceId: buildId,
+                    sourceType: "build",
+                  })
+                  .delete();
+                // Reset price
+                await db.table("build").update(buildId, { price: 0 });
+              });
             }}
-            value={build?.name ?? ""}
+          >
+            Reset
+          </Button>
+          <h1>Edit build</h1>
+          <h2>Build Price</h2>
+          {build && (
+            <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
+          )}
+        </>
+      }
+      sidebar={
+        <>
+          {/* Build Name */}
+          <Div.LabelledControl key="name">
+            <label>Name</label>
+            <input
+              type="text"
+              name="name"
+              onChange={(e) => {
+                db.table("build").update(buildId, { name: e.target.value });
+              }}
+              value={build?.name ?? ""}
+            />
+          </Div.LabelledControl>
+          {/* Build Components */}
+          <BuildComponentSlot
+            key="cpu"
+            buildId={buildId}
+            componentType="cpu"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("cpu");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
           />
-        </div>
-        {/* Build Components */}
-        <BuildComponentSlot
-          key="cpu"
-          buildId={buildId}
-          componentType="cpu"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("cpu");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="gpu"
-          buildId={buildId}
-          componentType="gpu"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("gpu");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="mobo"
-          buildId={buildId}
-          componentType="mobo"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("mobo");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="ram"
-          buildId={buildId}
-          componentType="ram"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("ram");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="storage"
-          buildId={buildId}
-          componentType="storage"
-          multiple={true}
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("storage");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="psu"
-          buildId={buildId}
-          componentType="psu"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("psu");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-        <BuildComponentSlot
-          key="cooler"
-          buildId={buildId}
-          componentType="cooler"
-          selectedComponentType={selectedComponentType}
-          selectedEdgeId={selectedEdgeId}
-          onClick={(maybeEdgeId) => {
-            setSelectedComponentType("cooler");
-            setSelectedEdgeId(maybeEdgeId ?? null);
-          }}
-        />
-      </Div.Sidebar>
-      <Div.Content>
-        {selectedComponentType === null ? (
-          <Div.EmptyStateText>
-            Select a component to add to the build
-          </Div.EmptyStateText>
-        ) : (
+          <BuildComponentSlot
+            key="gpu"
+            buildId={buildId}
+            componentType="gpu"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("gpu");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+          <BuildComponentSlot
+            key="mobo"
+            buildId={buildId}
+            componentType="mobo"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("mobo");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+          <BuildComponentSlot
+            key="ram"
+            buildId={buildId}
+            componentType="ram"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("ram");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+          <BuildComponentSlot
+            key="storage"
+            buildId={buildId}
+            componentType="storage"
+            multiple={true}
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("storage");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+          <BuildComponentSlot
+            key="psu"
+            buildId={buildId}
+            componentType="psu"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("psu");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+          <BuildComponentSlot
+            key="cooler"
+            buildId={buildId}
+            componentType="cooler"
+            selectedComponentType={selectedComponentType}
+            selectedEdgeId={selectedEdgeId}
+            onClick={(maybeEdgeId) => {
+              setSelectedComponentType("cooler");
+              setSelectedEdgeId(maybeEdgeId ?? null);
+            }}
+          />
+        </>
+      }
+      content={
+        selectedComponentType && (
           <SelectBuildComponent
             buildId={buildId}
             edgeId={selectedEdgeId}
@@ -259,8 +262,9 @@ export const EditBuildPage = (props: Props) => {
               setSelectedEdgeId(edgeId);
             }}
           />
-        )}
-      </Div.Content>
-    </Div.Container>
+        )
+      }
+      emptyStateText="Select a component to add to the build"
+    />
   );
 };
