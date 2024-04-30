@@ -1,8 +1,82 @@
-.container {
+.contentContainer {
   display: flex;
-  min-height: 100vh;
-  overflow-y: auto;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.buildGroupHeading {
+  margin-bottom: 8px;
+}
+
+.buildGroupTitle {
+  margin-bottom: 24px;
+}
+
+.scrollContainer {
+  /* width: 100%; */
+  max-width: 100%;
+  overflow-x: auto;
+  display: flex;
+  /* justify-content: center; */
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.buildSummary,
+.buildSummaryPlaceholder {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
+  background-color: var(--dark10);
+  border: 2px solid var(--dark10);
+  width: 380px;
+}
+.buildSummary:hover {
+  cursor: pointer;
+  border-color: var(--accent0);
+}
+
+.buildSummaryPlaceholder {
+  background-color: unset;
+  border-color: var(--dark10);
+  width: auto;
+}
+.buildSummaryPlaceholder:hover {
+  cursor: pointer;
+  border-color: var(--accent0);
+}
+.buildSummaryPlaceholder > * {
+  margin: auto;
+}
+
+.buildSummaryComponent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.componentName {
+  display: flex;
+  margin-bottom: 10px;
+}
+.componentName > :first-child {
+  margin-right: auto;
+  color: var(--light80);
+}
+
+.emptySlot {
+  color: var(--light80);
+}
+
+.actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.actions > button {
+  min-width: 85px;
 }

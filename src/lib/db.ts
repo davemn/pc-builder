@@ -5,6 +5,7 @@ const DATABASE_NAME = "PCBuilder";
 export type StoreName =
   | "edges"
   | "build"
+  | "buildGroup"
   | "cpu"
   | "gpu"
   | "ram"
@@ -25,6 +26,11 @@ export interface BuildSchema {
   id: number;
   name: string;
   price: number;
+}
+
+export interface BuildGroupSchema {
+  id: number;
+  name: string;
 }
 
 export interface CpuSchema {
@@ -119,6 +125,7 @@ export interface CoolerSchema {
 export type Schema<T extends StoreName> = {
   edges: EdgeSchema;
   build: BuildSchema;
+  buildGroup: BuildGroupSchema;
   cpu: CpuSchema;
   gpu: GpuSchema;
   ram: RamSchema;
@@ -158,6 +165,28 @@ export class BrowserDatabase extends Dexie {
           .modify((build) => {
             build.price = 0;
           });
+      });
+    this.version(3)
+      .stores({
+        buildGroup: "++id, name",
+      })
+      .upgrade(async (tx) => {
+        const buildGroupId = await tx
+          .table<Omit<BuildGroupSchema, "id">>("buildGroup")
+          .add({
+            name: "Desktop",
+          });
+
+        const existingBuilds = await tx.table<BuildSchema>("build").toArray();
+
+        for (const build of existingBuilds) {
+          tx.table<Omit<EdgeSchema, "id">>("edges").add({
+            sourceId: buildGroupId,
+            sourceType: "buildGroup",
+            targetId: build.id,
+            targetType: "build",
+          });
+        }
       });
   }
 }

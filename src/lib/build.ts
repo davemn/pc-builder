@@ -10,7 +10,10 @@ import {
 } from "lib/columns";
 import { Schema, StoreName } from "lib/db";
 
-export type BuildComponentStoreName = Exclude<StoreName, "edges" | "build">;
+export type BuildComponentStoreName = Exclude<
+  StoreName,
+  "edges" | "build" | "buildGroup"
+>;
 
 export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
   singularName: string;

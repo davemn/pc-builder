@@ -32,7 +32,7 @@ type ButtonProps = {
     }
   | {
       type?: "button";
-      onClick: () => void;
+      onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     }
 );
 

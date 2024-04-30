@@ -23,7 +23,11 @@ export const Layout = (props: LayoutProps) => {
     <Div.Container>
       {navProp && <nav className={classNames.nav}>{navProp}</nav>}
       {sidebarProp && <Div.Sidebar>{sidebarProp}</Div.Sidebar>}
-      <Div.Content>
+      <Div.Content
+        style={{
+          ...(!sidebarProp ? { gridColumn: "1 / 3" } : {}),
+        }}
+      >
         {contentProp ? (
           contentProp
         ) : (
