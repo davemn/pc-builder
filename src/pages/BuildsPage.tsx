@@ -3,14 +3,29 @@ import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
-import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema, db } from "lib/db";
+import {
+  BuildComponentMeta,
+  BuildComponentStoreName,
+  OrderedBuildComponentStoreNames,
+} from "lib/build";
+import {
+  BuildGroupSchema,
+  BuildSchema,
+  EdgeSchema,
+  Schema,
+  StoreName,
+  db,
+} from "lib/db";
 import { BuildsPageProps, NavigateProp } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./BuildsPage.module.css";
 
-const { Div } = makeClassNamePrimitives(classNames);
+const { Div, Span } = makeClassNamePrimitives(classNames);
+
+type RecordByStoreName = {
+  [T in BuildComponentStoreName]: Array<Schema<T>>;
+};
 
 type Props = BuildsPageProps & {
   navigate: NavigateProp;
@@ -25,6 +40,7 @@ interface BuildGroupProps {
 
 interface BuildSummaryProps {
   build: BuildSchema;
+  compareToBuildComponents: RecordByStoreName | null;
   isSelected: boolean;
   onClick: () => void;
   onCopy: () => void;
@@ -38,6 +54,7 @@ interface BuildSummaryPlaceholderProps {
 
 interface BuildSummaryComponentProps {
   buildId: number;
+  compareToPrice: number | null;
   componentType: BuildComponentStoreName;
 }
 
@@ -98,8 +115,24 @@ async function createOrCopyBuild(
   });
 }
 
+function getSlotPrice(
+  components: Array<Schema<BuildComponentStoreName>> | undefined
+): number | null {
+  if (!components || components.length === 0) {
+    return null;
+  }
+  return components.reduce((acc, component) => acc + component.price, 0);
+}
+
+function formatPrice(price: number | null): string {
+  if (price === null) {
+    return "$0";
+  }
+  return `$${Math.round(price)}`;
+}
+
 const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
-  const { buildId, componentType } = props;
+  const { buildId, compareToPrice, componentType } = props;
 
   const assignedSlots = useLiveQuery<
     Array<Schema<BuildComponentStoreName>>
@@ -126,13 +159,31 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
     return components;
   }, [buildId, componentType]);
 
+  const renderPrice = () => {
+    const slotPrice = getSlotPrice(assignedSlots);
+
+    if (slotPrice === null) {
+      return null;
+    }
+
+    if (compareToPrice === null || slotPrice === compareToPrice) {
+      return <Span.ValueNeutral>{formatPrice(slotPrice)}</Span.ValueNeutral>;
+    }
+
+    if (slotPrice > compareToPrice) {
+      return <Span.ValueNegative>{formatPrice(slotPrice)}</Span.ValueNegative>;
+    }
+
+    return <Span.ValuePositive>{formatPrice(slotPrice)}</Span.ValuePositive>;
+  };
+
   const componentMeta = BuildComponentMeta[componentType];
 
   return (
     <Div.BuildSummaryComponent>
       <Div.ComponentName>
         <span>{componentMeta.singularName}</span>
-        <span>$700</span>
+        {renderPrice()}
       </Div.ComponentName>
       {assignedSlots?.map((component) => (
         <h2 key={component.id}>{component.name}</h2>
@@ -145,7 +196,15 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
 };
 
 const BuildSummary = (props: BuildSummaryProps) => {
-  const { build, isSelected, onClick, onCopy, onEdit, onRemove } = props;
+  const {
+    build,
+    compareToBuildComponents,
+    isSelected,
+    onClick,
+    onCopy,
+    onEdit,
+    onRemove,
+  } = props;
 
   return (
     <Div.BuildSummary
@@ -160,13 +219,16 @@ const BuildSummary = (props: BuildSummaryProps) => {
     >
       <h1>{build.name}</h1>
       <h2>{`$${Math.round(build.price)}`}</h2>
-      <BuildSummaryComponent buildId={build.id} componentType="cpu" />
-      <BuildSummaryComponent buildId={build.id} componentType="gpu" />
-      <BuildSummaryComponent buildId={build.id} componentType="mobo" />
-      <BuildSummaryComponent buildId={build.id} componentType="ram" />
-      <BuildSummaryComponent buildId={build.id} componentType="storage" />
-      <BuildSummaryComponent buildId={build.id} componentType="psu" />
-      <BuildSummaryComponent buildId={build.id} componentType="cooler" />
+      {OrderedBuildComponentStoreNames.map((componentType) => (
+        <BuildSummaryComponent
+          key={componentType}
+          buildId={build.id}
+          componentType={componentType}
+          compareToPrice={getSlotPrice(
+            compareToBuildComponents?.[componentType]
+          )}
+        />
+      ))}
       <Div.Actions>
         <Button onClick={() => onCopy()}>Copy</Button>
         <Button onClick={() => onEdit()}>Edit</Button>
@@ -201,6 +263,58 @@ const BuildGroup = (props: BuildGroupProps) => {
 
   const [selectedBuildId, setSelectedBuildId] = useState<number | null>(null);
 
+  const selectedBuildComponentsByType = useLiveQuery<
+    RecordByStoreName | null,
+    null
+  >(
+    async () => {
+      if (!selectedBuildId) {
+        return null;
+      }
+
+      const edges = await db
+        .table<EdgeSchema>("edges")
+        .where({
+          sourceId: selectedBuildId,
+          sourceType: "build",
+        })
+        .toArray();
+
+      const edgesByType = edges.reduce(
+        (acc, edge) => {
+          if (!acc[edge.targetType]) {
+            acc[edge.targetType] = [];
+          }
+
+          acc[edge.targetType].push(edge);
+
+          return acc;
+        },
+        {} as Record<StoreName, Array<EdgeSchema>>
+      );
+
+      const buildComponentsByType: RecordByStoreName = {} as RecordByStoreName;
+
+      for (const componentType of Object.keys(
+        edgesByType
+      ) as Array<BuildComponentStoreName>) {
+        const componentEdges = edgesByType[componentType];
+
+        const components = await db
+          .table(componentType)
+          .where(":id")
+          .anyOf(componentEdges.map((edge) => edge.targetId))
+          .toArray();
+
+        buildComponentsByType[componentType] = components;
+      }
+
+      return buildComponentsByType;
+    },
+    [selectedBuildId],
+    null
+  );
+
   return (
     <>
       <h2 className={classNames.buildGroupHeading}>Machine</h2>
@@ -210,6 +324,7 @@ const BuildGroup = (props: BuildGroupProps) => {
           <BuildSummary
             key={build.id}
             build={build}
+            compareToBuildComponents={selectedBuildComponentsByType}
             isSelected={selectedBuildId === build.id}
             onClick={() => {
               if (selectedBuildId === build.id) {

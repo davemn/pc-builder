@@ -80,3 +80,15 @@
 .actions > button {
   min-width: 85px;
 }
+
+.valueNeutral {
+  color: var(--light90);
+}
+
+.valuePositive {
+  color: var(--positive100);
+}
+
+.valueNegative {
+  color: var(--negative100);
+}

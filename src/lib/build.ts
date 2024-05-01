@@ -15,6 +15,18 @@ export type BuildComponentStoreName = Exclude<
   "edges" | "build" | "buildGroup"
 >;
 
+// Be careful when adding new component types, the Typescript compiler doesn't enforce
+// that every store name is included in this array
+export const OrderedBuildComponentStoreNames: Array<BuildComponentStoreName> = [
+  "cpu",
+  "gpu",
+  "mobo",
+  "ram",
+  "storage",
+  "psu",
+  "cooler",
+];
+
 export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
   singularName: string;
   pluralName: string;
