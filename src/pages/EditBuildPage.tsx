@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
-import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
+import {
+  BuildComponentMeta,
+  BuildComponentStoreName,
+  OrderedBuildComponentStoreNames,
+} from "lib/build";
 import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
 import { EditBuildPageProps, NavigateProp } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
@@ -169,84 +173,19 @@ export const EditBuildPage = (props: Props) => {
             />
           </Div.LabelledControl>
           {/* Build Components */}
-          <BuildComponentSlot
-            key="cpu"
-            buildId={buildId}
-            componentType="cpu"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("cpu");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="gpu"
-            buildId={buildId}
-            componentType="gpu"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("gpu");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="mobo"
-            buildId={buildId}
-            componentType="mobo"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("mobo");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="ram"
-            buildId={buildId}
-            componentType="ram"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("ram");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="storage"
-            buildId={buildId}
-            componentType="storage"
-            multiple={true}
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("storage");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="psu"
-            buildId={buildId}
-            componentType="psu"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("psu");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
-          <BuildComponentSlot
-            key="cooler"
-            buildId={buildId}
-            componentType="cooler"
-            selectedComponentType={selectedComponentType}
-            selectedEdgeId={selectedEdgeId}
-            onClick={(maybeEdgeId) => {
-              setSelectedComponentType("cooler");
-              setSelectedEdgeId(maybeEdgeId ?? null);
-            }}
-          />
+          {OrderedBuildComponentStoreNames.map((componentType) => (
+            <BuildComponentSlot
+              key={componentType}
+              buildId={buildId}
+              componentType={componentType}
+              selectedComponentType={selectedComponentType}
+              selectedEdgeId={selectedEdgeId}
+              onClick={(maybeEdgeId) => {
+                setSelectedComponentType(componentType);
+                setSelectedEdgeId(maybeEdgeId ?? null);
+              }}
+            />
+          ))}
         </>
       }
       content={
