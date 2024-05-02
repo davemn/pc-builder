@@ -116,10 +116,34 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
     [buildGroupId]
   );
 
-  const build = useLiveQuery<BuildSchema>(
-    () => db.table("build").get(buildId),
-    [buildId]
+  const builds = useLiveQuery<Array<BuildSchema>, []>(
+    async () => {
+      const edges = await db
+        .table<EdgeSchema>("edges")
+        .where({
+          sourceId: buildGroupId,
+          sourceType: "buildGroup",
+          targetType: "build",
+        })
+        .toArray();
+
+      if (!edges || edges.length === 0) {
+        return [];
+      }
+
+      const builds = await db
+        .table<BuildSchema>("build")
+        .where(":id")
+        .anyOf(edges.map((edge) => edge.targetId))
+        .toArray();
+
+      return builds;
+    },
+    [buildGroupId],
+    []
   );
+
+  const build = builds?.find((build) => build.id === buildId);
 
   return (
     <Layout
@@ -173,11 +197,33 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
           </Div.LabelledControlInline>
         </>
       }
+      subnav={
+        <>
+          <h2 className={classNames.subnavHeading}>Builds</h2>
+          <Div.ScrollContainer>
+            {builds.map((build) => (
+              <Button
+                key={build.id}
+                onClick={() =>
+                  navigate("editBuild", { buildGroupId, buildId: build.id })
+                }
+                variant={
+                  build.id === buildId
+                    ? ButtonVariant.ACTIVE
+                    : ButtonVariant.DEFAULT
+                }
+              >
+                {build.name}
+              </Button>
+            ))}
+          </Div.ScrollContainer>
+        </>
+      }
       sidebar={
         <>
           {/* Build Name */}
           <Div.LabelledControl key="name">
-            <label>Name</label>
+            <label>Build Name</label>
             <input
               type="text"
               name="name"

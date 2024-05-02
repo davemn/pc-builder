@@ -1,24 +1,24 @@
 export type PageId = "builds" | "editBuild";
 
 export type NavigateProp<T extends PageId> = {
-  builds: (
-    targetId: "builds",
-    targetProps: Omit<BuildsPageProps, "navigate">
+  editBuild: <T extends PageId>(
+    targetId: T,
+    targetProps: Omit<PageProps<T>, "navigate">
   ) => void;
-  editBuild: (
+  builds: (
     targetId: "editBuild",
     targetProps: Omit<EditBuildPageProps, "navigate">
   ) => void;
 }[T];
 
 export interface BuildsPageProps {
-  navigate: NavigateProp<"editBuild">;
+  navigate: NavigateProp<"builds">;
 }
 
 export interface EditBuildPageProps {
   buildGroupId: number;
   buildId: number;
-  navigate: NavigateProp<"builds">;
+  navigate: NavigateProp<"editBuild">;
 }
 
 export type PageProps<T extends PageId> = {

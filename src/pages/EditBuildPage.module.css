@@ -30,3 +30,20 @@
   color: var(--accent0);
   background-color: var(--light90);
 }
+
+.subnavHeading {
+  padding-left: 20px;
+}
+
+.scrollContainer {
+  max-width: 100%;
+  overflow-x: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+}
+
+.scrollContainer > * {
+  flex-shrink: 0;
+}

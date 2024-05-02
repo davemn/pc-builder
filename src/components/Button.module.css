@@ -12,7 +12,7 @@
 }
 
 .variantDefault {
-  border-color: 2px solid var(--light80);
+  border-color: var(--light80);
   color: var(--light90);
 }
 .variantDefault:active {
@@ -22,7 +22,7 @@
 
 .variantActive {
   background-color: var(--accent100);
-  border-width: 0;
+  border-color: var(--accent100);
   color: var(--light100);
 }
 
