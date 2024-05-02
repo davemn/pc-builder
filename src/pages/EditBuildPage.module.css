@@ -15,7 +15,14 @@
 .labelledControl {
   display: flex;
   flex-direction: column;
-  row-gap: 10px;
+  gap: 10px;
+}
+
+.labelledControlInline {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
 }
 
 .activeControl {

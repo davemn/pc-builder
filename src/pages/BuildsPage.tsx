@@ -16,7 +16,7 @@ import {
   StoreName,
   db,
 } from "lib/db";
-import { BuildsPageProps, NavigateProp } from "lib/page";
+import { BuildsPageProps, NavigateProp, PageId } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./BuildsPage.module.css";
@@ -27,15 +27,11 @@ type RecordByStoreName = {
   [T in BuildComponentStoreName]: Array<Schema<T>>;
 };
 
-type Props = BuildsPageProps & {
-  navigate: NavigateProp;
-};
-
 interface BuildGroupProps {
   builds: BuildSchema[];
   id: number;
   name: string;
-  navigate: NavigateProp;
+  navigate: BuildsPageProps["navigate"];
 }
 
 interface BuildSummaryProps {
@@ -355,7 +351,10 @@ const BuildGroup = (props: BuildGroupProps) => {
               await createOrCopyBuild(groupId, build.id);
             }}
             onEdit={() => {
-              navigate("editBuild", { buildId: build.id });
+              navigate("editBuild", {
+                buildGroupId: groupId,
+                buildId: build.id,
+              });
             }}
             onRemove={async () => {
               // remove build from group & delete
@@ -381,7 +380,10 @@ const BuildGroup = (props: BuildGroupProps) => {
         <BuildSummaryPlaceholder
           onClick={async () => {
             const newBuildId = await createOrCopyBuild(groupId);
-            navigate("editBuild", { buildId: newBuildId });
+            navigate("editBuild", {
+              buildGroupId: groupId,
+              buildId: newBuildId,
+            });
           }}
         />
       </Div.ScrollContainer>
@@ -389,7 +391,7 @@ const BuildGroup = (props: BuildGroupProps) => {
   );
 };
 
-export const BuildsPage = (props: Props) => {
+export const BuildsPage = (props: BuildsPageProps) => {
   const { navigate } = props;
 
   const buildGroups = useLiveQuery<

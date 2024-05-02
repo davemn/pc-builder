@@ -9,17 +9,13 @@ import {
   BuildComponentStoreName,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
-import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
-import { EditBuildPageProps, NavigateProp } from "lib/page";
+import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema, db } from "lib/db";
+import { EditBuildPageProps } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./EditBuildPage.module.css";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
-
-type Props = EditBuildPageProps & {
-  navigate: NavigateProp;
-};
 
 interface BuildComponentSlotProps {
   buildId: number;
@@ -107,16 +103,21 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
   );
 };
 
-export const EditBuildPage = (props: Props) => {
-  const { buildId, navigate } = props;
+export const EditBuildPage = (props: EditBuildPageProps) => {
+  const { buildGroupId, buildId, navigate } = props;
 
   /* Sets the content pane */
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
 
+  const buildGroup = useLiveQuery<BuildGroupSchema>(
+    () => db.table("buildGroup").get(buildGroupId),
+    [buildGroupId]
+  );
+
   const build = useLiveQuery<BuildSchema>(
-    () => db.table("build").where({ id: buildId }).first(),
+    () => db.table("build").get(buildId),
     [buildId]
   );
 
@@ -151,11 +152,25 @@ export const EditBuildPage = (props: Props) => {
           >
             Reset
           </Button>
-          <h1>Edit build</h1>
-          <h2>Build Price</h2>
-          {build && (
-            <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
-          )}
+          <Div.LabelledControlInline>
+            <label>Machine Name</label>
+            <input
+              type="text"
+              name="name"
+              onChange={async (e) => {
+                await db
+                  .table("buildGroup")
+                  .update(buildGroupId, { name: e.target.value });
+              }}
+              value={buildGroup?.name ?? ""}
+            />
+          </Div.LabelledControlInline>
+          <Div.LabelledControlInline>
+            <h2>Build Price</h2>
+            {build && (
+              <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
+            )}
+          </Div.LabelledControlInline>
         </>
       }
       sidebar={
@@ -166,8 +181,10 @@ export const EditBuildPage = (props: Props) => {
             <input
               type="text"
               name="name"
-              onChange={(e) => {
-                db.table("build").update(buildId, { name: e.target.value });
+              onChange={async (e) => {
+                await db
+                  .table("build")
+                  .update(buildId, { name: e.target.value });
               }}
               value={build?.name ?? ""}
             />

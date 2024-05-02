@@ -8,7 +8,7 @@ import classNames from "./App.module.css";
 
 interface PageState<T extends PageId = PageId> {
   id: T;
-  props: PageProps<T>;
+  props: Omit<PageProps<T>, "navigate">;
 }
 
 function isPageId<T extends PageId>(
@@ -24,7 +24,10 @@ export const App = () => {
     props: {},
   });
 
-  const navigate: NavigateProp = (targetId, targetProps) => {
+  const navigate = (
+    targetId: PageId,
+    targetProps: Omit<PageProps<PageId>, "navigate">
+  ) => {
     switch (targetId) {
       case "builds":
         setPage({ id: "builds", props: {} });

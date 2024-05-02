@@ -18,8 +18,8 @@
   border-bottom: 1px solid var(--dark0);
 }
 
-.nav > h1 {
-  margin-right: auto;
+.nav > :last-child {
+  margin-left: auto;
 }
 
 .sidebar {
