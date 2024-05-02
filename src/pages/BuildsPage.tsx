@@ -40,7 +40,7 @@ interface BuildGroupProps {
 
 interface BuildSummaryProps {
   build: BuildSchema;
-  compareToBuildComponents: RecordByStoreName | null;
+  compareToBuild: (BuildSchema & { components: RecordByStoreName }) | null;
   isSelected: boolean;
   onClick: () => void;
   onCopy: () => void;
@@ -56,6 +56,11 @@ interface BuildSummaryComponentProps {
   buildId: number;
   compareToPrice: number | null;
   componentType: BuildComponentStoreName;
+}
+
+interface IndicatorPriceProps {
+  price: number | null;
+  compareToPrice: number | null;
 }
 
 async function createOrCopyBuild(
@@ -124,12 +129,27 @@ function getSlotPrice(
   return components.reduce((acc, component) => acc + component.price, 0);
 }
 
-function formatPrice(price: number | null): string {
-  if (price === null) {
-    return "$0";
-  }
+function formatPrice(price: number): string {
   return `$${Math.round(price)}`;
 }
+
+const IndicatorPrice = (props: IndicatorPriceProps) => {
+  const { price, compareToPrice } = props;
+
+  if (price === null) {
+    return null;
+  }
+
+  if (compareToPrice === null || price === compareToPrice) {
+    return <Span.ValueNeutral>{formatPrice(price)}</Span.ValueNeutral>;
+  }
+
+  if (price > compareToPrice) {
+    return <Span.ValueNegative>{formatPrice(price)}</Span.ValueNegative>;
+  }
+
+  return <Span.ValuePositive>{formatPrice(price)}</Span.ValuePositive>;
+};
 
 const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
   const { buildId, compareToPrice, componentType } = props;
@@ -159,31 +179,16 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
     return components;
   }, [buildId, componentType]);
 
-  const renderPrice = () => {
-    const slotPrice = getSlotPrice(assignedSlots);
-
-    if (slotPrice === null) {
-      return null;
-    }
-
-    if (compareToPrice === null || slotPrice === compareToPrice) {
-      return <Span.ValueNeutral>{formatPrice(slotPrice)}</Span.ValueNeutral>;
-    }
-
-    if (slotPrice > compareToPrice) {
-      return <Span.ValueNegative>{formatPrice(slotPrice)}</Span.ValueNegative>;
-    }
-
-    return <Span.ValuePositive>{formatPrice(slotPrice)}</Span.ValuePositive>;
-  };
-
   const componentMeta = BuildComponentMeta[componentType];
 
   return (
     <Div.BuildSummaryComponent>
       <Div.ComponentName>
         <span>{componentMeta.singularName}</span>
-        {renderPrice()}
+        <IndicatorPrice
+          price={getSlotPrice(assignedSlots)}
+          compareToPrice={compareToPrice}
+        />
       </Div.ComponentName>
       {assignedSlots?.map((component) => (
         <h2 key={component.id}>{component.name}</h2>
@@ -198,7 +203,7 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
 const BuildSummary = (props: BuildSummaryProps) => {
   const {
     build,
-    compareToBuildComponents,
+    compareToBuild,
     isSelected,
     onClick,
     onCopy,
@@ -218,14 +223,20 @@ const BuildSummary = (props: BuildSummaryProps) => {
       }
     >
       <h1>{build.name}</h1>
-      <h2>{`$${Math.round(build.price)}`}</h2>
+      {/* indicator color for total price */}
+      <h2>
+        <IndicatorPrice
+          price={build.price}
+          compareToPrice={compareToBuild?.price ?? null}
+        />
+      </h2>
       {OrderedBuildComponentStoreNames.map((componentType) => (
         <BuildSummaryComponent
           key={componentType}
           buildId={build.id}
           componentType={componentType}
           compareToPrice={getSlotPrice(
-            compareToBuildComponents?.[componentType]
+            compareToBuild?.components?.[componentType]
           )}
         />
       ))}
@@ -261,21 +272,21 @@ const BuildSummaryPlaceholder = (props: BuildSummaryPlaceholderProps) => {
 const BuildGroup = (props: BuildGroupProps) => {
   const { builds, id: groupId, name, navigate } = props;
 
-  const [selectedBuildId, setSelectedBuildId] = useState<number | null>(null);
+  const [selectedBuild, setSelectedBuild] = useState<BuildSchema | null>(null);
 
   const selectedBuildComponentsByType = useLiveQuery<
     RecordByStoreName | null,
     null
   >(
     async () => {
-      if (!selectedBuildId) {
+      if (!selectedBuild) {
         return null;
       }
 
       const edges = await db
         .table<EdgeSchema>("edges")
         .where({
-          sourceId: selectedBuildId,
+          sourceId: selectedBuild.id,
           sourceType: "build",
         })
         .toArray();
@@ -311,7 +322,7 @@ const BuildGroup = (props: BuildGroupProps) => {
 
       return buildComponentsByType;
     },
-    [selectedBuildId],
+    [selectedBuild?.id],
     null
   );
 
@@ -324,13 +335,20 @@ const BuildGroup = (props: BuildGroupProps) => {
           <BuildSummary
             key={build.id}
             build={build}
-            compareToBuildComponents={selectedBuildComponentsByType}
-            isSelected={selectedBuildId === build.id}
+            compareToBuild={
+              selectedBuild && selectedBuildComponentsByType
+                ? {
+                    ...selectedBuild,
+                    components: selectedBuildComponentsByType,
+                  }
+                : null
+            }
+            isSelected={selectedBuild?.id === build.id}
             onClick={() => {
-              if (selectedBuildId === build.id) {
-                setSelectedBuildId(null);
+              if (selectedBuild?.id === build.id) {
+                setSelectedBuild(null);
               } else {
-                setSelectedBuildId(build.id);
+                setSelectedBuild({ ...build });
               }
             }}
             onCopy={async () => {
