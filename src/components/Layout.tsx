@@ -22,7 +22,11 @@ export const Layout = (props: LayoutProps) => {
   } = props;
 
   return (
-    <Div.Container>
+    <Div.Container
+      style={{
+        gridTemplateRows: !subnavProp ? "auto 1fr" : "auto auto 1fr",
+      }}
+    >
       {navProp && <nav className={classNames.nav}>{navProp}</nav>}
       {subnavProp && <Div.Subnav>{subnavProp}</Div.Subnav>}
       {sidebarProp && <Div.Sidebar>{sidebarProp}</Div.Sidebar>}

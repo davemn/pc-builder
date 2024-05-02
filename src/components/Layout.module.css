@@ -2,10 +2,8 @@
   background-color: var(--dark10);
   height: 100vh;
 
-  /* gap: 20px; */
   display: grid;
   grid-template-columns: 380px 1fr;
-  grid-template-rows: auto 1fr;
 }
 
 .nav,
