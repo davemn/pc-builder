@@ -9,11 +9,28 @@
   gap: 10px;
   align-items: center;
 }
+.tableName > :first-child {
+  margin-right: auto;
+}
 
 .scrollContainer {
   width: 100%;
   overflow-x: auto;
   margin-bottom: 65px;
+}
+
+.compatibleRowBadge,
+.incompatibleRowBadge {
+  align-self: flex-start;
+  padding: 8px 12px;
+}
+
+.compatibleRowBadge {
+  background-color: var(--accent100);
+}
+
+.incompatibleRowBadge {
+  background-color: var(--negative100);
 }
 
 .selectedRow {

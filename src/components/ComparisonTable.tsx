@@ -1,13 +1,15 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import React, { useMemo, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
 import { Modal } from "components/Modal";
 import { SortControls } from "components/SortControls";
+import { BuildContext } from "context/build";
+import { ExtendedBuildSchema } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
 import { db, Schema, StoreName } from "lib/db";
-import { makeClassNamePrimitives } from "lib/styles";
+import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./ComparisonTable.module.css";
 
@@ -18,7 +20,7 @@ export interface ComparisonTableProps<T extends StoreName> {
   dataStoreName: T;
   dataStoreLabel: string;
   columns: Array<ColumnDefinition<T>>;
-  getIsBuildCompatible: (row: Schema<T>) => boolean;
+  getIsBuildCompatible: (row: Schema<T>, build: ExtendedBuildSchema) => boolean;
   onEditSelected: (previousRow: Schema<T>, row: Schema<T>) => void;
   onRemove: (row: Schema<T>) => void;
   onSelect: (previousRow: Schema<T> | null, row: Schema<T>) => void;
@@ -68,11 +70,24 @@ interface TableRowProps<T extends StoreName> {
   onSelect?: (id: number) => void;
   row: Schema<T>;
   rowIndex: number;
+  editButtonVariant?: ButtonVariant;
+  removeButtonVariant?: ButtonVariant;
+  selectButtonVariant?: ButtonVariant;
 }
 
 const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
-  const { columns, compareToRow, onEdit, onRemove, onSelect, row, rowIndex } =
-    props;
+  const {
+    columns,
+    compareToRow,
+    onEdit,
+    onRemove,
+    onSelect,
+    row,
+    rowIndex,
+    editButtonVariant = ButtonVariant.DEFAULT,
+    removeButtonVariant = ButtonVariant.ACCENT,
+    selectButtonVariant = ButtonVariant.DEFAULT,
+  } = props;
 
   const renderCellValue = (column: ColumnDefinition<T>) => {
     const value = row[column.name];
@@ -151,16 +166,25 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
           ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
         }}
       >
-        <Button onClick={() => onEdit(row.id)}>Edit</Button>
+        <Button onClick={() => onEdit(row.id)} variant={editButtonVariant}>
+          Edit
+        </Button>
         {onRemove && (
           <Button
             onClick={() => onRemove(row.id)}
-            variant={ButtonVariant.ACTIVE}
+            variant={removeButtonVariant}
           >
             Remove
           </Button>
         )}
-        {onSelect && <Button onClick={() => onSelect(row.id)}>Select</Button>}
+        {onSelect && (
+          <Button
+            onClick={() => onSelect(row.id)}
+            variant={selectButtonVariant}
+          >
+            Select
+          </Button>
+        )}
       </Div.ActionCell>
     </>
   );
@@ -180,6 +204,8 @@ export const ComparisonTable = <T extends StoreName>(
     selectedRowId,
     style,
   } = props;
+
+  const { build } = useContext(BuildContext);
 
   const [sortBy, setSortBy] = useState<
     Array<{ columnName: string; direction: "asc" | "desc" }>
@@ -207,7 +233,7 @@ export const ComparisonTable = <T extends StoreName>(
     for (const row of allRows) {
       if (row.id === selectedRowId) {
         selectedRow = row;
-      } else if (getIsBuildCompatible(row)) {
+      } else if (!build || getIsBuildCompatible(row, build)) {
         unselectedRows.push(row);
       } else {
         incompatibleRows.push(row);
@@ -215,7 +241,7 @@ export const ComparisonTable = <T extends StoreName>(
     }
 
     return [selectedRow, unselectedRows, incompatibleRows];
-  }, [selectedRowId, allRows, getIsBuildCompatible]);
+  }, [selectedRowId, allRows, getIsBuildCompatible, build]);
 
   // TODO combine useLiveQuery and useMemo (return the memo value from useLiveQuery)
   // Otherwise the row state is stale when the table is re-rendered when dataStoreName changes
@@ -228,34 +254,60 @@ export const ComparisonTable = <T extends StoreName>(
     }
   };
 
+  const selectedRowIsCompatible =
+    selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
+
   return (
     <Div.Container>
       <Div.TableName>
         <h2>{dataStoreLabel}</h2>
         <Button
           onClick={() => setAddModalOpen(true)}
-          variant={ButtonVariant.ACTIVE}
+          variant={ButtonVariant.ACCENT}
         >
           Add
         </Button>
       </Div.TableName>
 
       {selectedRow && (
-        <Div.ScrollContainer>
-          <Div.SelectedRow
+        <>
+          <h2
+            className={cx(
+              classNames,
+              selectedRowIsCompatible
+                ? "compatibleRowBadge"
+                : "incompatibleRowBadge"
+            )}
+          >
+            {selectedRowIsCompatible ? "Selected" : "Incompatible with build"}
+          </h2>
+          <Div.ScrollContainer
             style={{
-              gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
+              border: selectedRowIsCompatible
+                ? "2px solid var(--accent100)"
+                : "2px solid var(--negative100)",
             }}
           >
-            <TableRow
-              columns={columns}
-              onEdit={() => handleEdit(selectedRow, true)}
-              onRemove={() => onRemove(selectedRow)}
-              row={selectedRow}
-              rowIndex={0}
-            />
-          </Div.SelectedRow>
-        </Div.ScrollContainer>
+            <Div.SelectedRow
+              style={{
+                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
+              }}
+            >
+              <TableRow
+                columns={columns}
+                onEdit={() => handleEdit(selectedRow, true)}
+                onRemove={() => onRemove(selectedRow)}
+                row={selectedRow}
+                rowIndex={0}
+                removeButtonVariant={
+                  selectedRowIsCompatible
+                    ? ButtonVariant.ACCENT
+                    : ButtonVariant.NEGATIVE
+                }
+              />
+            </Div.SelectedRow>
+          </Div.ScrollContainer>
+        </>
       )}
 
       <Div.TableFilters>
@@ -288,11 +340,13 @@ export const ComparisonTable = <T extends StoreName>(
               Nothing added
             </Div.EmptyState>
           )}
-          {selectedRow && unselectedRows.length === 0 && (
+          {allRows.length > 0 && unselectedRows.length === 0 && (
             <Div.EmptyState
               style={{ gridColumn: `1 / span ${columns.length + 2}` }}
             >
-              No compatible components to compare
+              {selectedRow
+                ? `No compatible ${dataStoreLabel} to compare`
+                : `No ${dataStoreLabel} compatible with build`}
             </Div.EmptyState>
           )}
         </Div.Table>
@@ -317,6 +371,7 @@ export const ComparisonTable = <T extends StoreName>(
                   columns={columns}
                   compareToRow={selectedRow}
                   onEdit={() => handleEdit(row)}
+                  onSelect={() => onSelect(selectedRow ?? null, row)}
                   row={row}
                   rowIndex={rowI}
                 />

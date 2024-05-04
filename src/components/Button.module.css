@@ -11,25 +11,48 @@
   cursor: pointer;
 }
 
-.variantDefault {
-  border-color: var(--light80);
-  color: var(--light90);
-}
-.variantDefault:active {
-  background-color: var(--accent100);
-  color: var(--light100);
-}
-
-.variantActive {
-  background-color: var(--accent100);
-  border-color: var(--accent100);
-  color: var(--light100);
-}
-
 .sizeNormal {
   font-size: var(--fontSizeBody);
 }
 
 .sizeLarge {
   font-size: var(--fontSizeHeading);
+}
+
+.variantDefault {
+  border-color: var(--light80);
+  color: var(--light90);
+}
+
+.variantDefaultActive,
+.variantDefault:active {
+  border-color: var(--light90);
+  color: var(--light100);
+}
+
+.variantActive,
+.variantAccent {
+  background-color: var(--accent100);
+  border-color: var(--accent100);
+  color: var(--light100);
+}
+
+.variantAccentActive,
+.variantAccent:active {
+  background-color: var(--light90);
+  border-color: var(--accent0);
+  color: var(--accent0);
+}
+
+.variantNegative {
+  background-color: var(--negative100);
+  border-color: var(--negative100);
+  color: var(--light100);
+}
+
+.variantNegativeActive,
+.variantNegative:active {
+  background-color: var(--light90);
+  border-color: var(--negative100);
+  color: var(--negative100);
 }

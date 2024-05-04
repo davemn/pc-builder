@@ -27,6 +27,16 @@ export type BuildComponentEdgeSchema = EdgeSchema<
   BuildComponentStoreName
 >;
 
+/** Unused. */
+export function edgeIsBuildComponent(
+  edge: EdgeSchema
+): edge is BuildComponentEdgeSchema {
+  return (
+    edge.sourceType === "build" &&
+    !["edges", "build", "buildGroup"].includes(edge.targetType)
+  );
+}
+
 export type ExtendedBuildSchema = BuildSchema & {
   components: {
     [T in BuildComponentStoreName]: Array<Schema<T> & { edgeId: number }>;
@@ -53,7 +63,10 @@ export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
   singularName: string;
   pluralName: string;
   columns: Array<ColumnDefinition<T>>;
-  getIsBuildCompatible: (component: Schema<T>) => boolean;
+  getIsBuildCompatible: (
+    component: Schema<T>,
+    build: ExtendedBuildSchema
+  ) => boolean;
 }
 
 // From https://stackoverflow.com/a/51691257
@@ -67,13 +80,24 @@ type BuildComponentRecord = {
   [key in BuildComponentStoreName]: BuildComponentDefinition<key>;
 };
 
+const columnStringEquals = (colA: string, colB: string) => {
+  return (
+    colA.toLowerCase().replace(/[^a-z0-9]/g, "") ===
+    colB.toLowerCase().replace(/[^a-z0-9]/g, "")
+  );
+};
+
 export const BuildComponentMeta: BuildComponentRecord = {
   cpu: {
     singularName: "CPU",
     pluralName: "CPUs",
     columns: CpuColumns,
-    getIsBuildCompatible: (component) => {
-      return true;
+    getIsBuildCompatible: (component, build) => {
+      const [assignedMobo] = build.components.mobo;
+      if (!assignedMobo) {
+        return true;
+      }
+      return columnStringEquals(assignedMobo.socket, component.socket);
     },
   },
   gpu: {

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
@@ -11,9 +11,9 @@ import {
   ExtendedBuildSchema,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
-import { EdgeSchema, db } from "lib/db";
+import { EdgeSchema, Schema, db } from "lib/db";
 import { EditBuildPageProps } from "lib/page";
-import { makeClassNamePrimitives } from "lib/styles";
+import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./EditBuildPage.module.css";
 
@@ -23,16 +23,18 @@ interface EditBuildPageInnerProps {
   navigate: EditBuildPageProps["navigate"];
 }
 
-interface BuildComponentSlotProps {
+interface BuildComponentSlotProps<T extends BuildComponentStoreName> {
   build: ExtendedBuildSchema;
-  componentType: BuildComponentStoreName;
+  componentType: T;
   multiple?: boolean;
   selectedComponentType: BuildComponentStoreName | null;
   selectedEdgeId: number | null;
   onClick: (maybeEdgeId?: number) => void;
 }
 
-const BuildComponentSlot = (props: BuildComponentSlotProps) => {
+const BuildComponentSlot = <T extends BuildComponentStoreName>(
+  props: BuildComponentSlotProps<T>
+) => {
   const {
     build,
     componentType,
@@ -42,22 +44,48 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
     onClick,
   } = props;
 
+  const { singularName, getIsBuildCompatible } =
+    BuildComponentMeta[componentType];
   const assignedSlots = build.components[componentType];
+  const hasIncompatibleSlots = assignedSlots.some(
+    (component) => !getIsBuildCompatible(component, build)
+  );
+
+  const getButtonVariant = (
+    component: (Schema<T> & { edgeId: number }) | null
+  ) => {
+    const isSelected =
+      selectedComponentType === componentType &&
+      selectedEdgeId === (component?.edgeId ?? null);
+
+    if (component === null) {
+      return isSelected ? ButtonVariant.DEFAULT_ACTIVE : ButtonVariant.DEFAULT;
+    }
+
+    const isCompatible = getIsBuildCompatible(component, build);
+
+    if (!isCompatible) {
+      return isSelected
+        ? ButtonVariant.NEGATIVE_ACTIVE
+        : ButtonVariant.NEGATIVE;
+    }
+
+    return isSelected ? ButtonVariant.ACCENT_ACTIVE : ButtonVariant.ACCENT;
+  };
 
   return (
     <Div.LabelledControl>
-      <label>{BuildComponentMeta[componentType].singularName}</label>
-      {assignedSlots.map(({ edgeId, ...component }) => (
+      <label
+        className={cx(classNames, hasIncompatibleSlots && "negativeLabel")}
+      >
+        {singularName}
+      </label>
+      {assignedSlots.map((component) => (
         <Button
           key={component.id}
-          className={
-            selectedComponentType === componentType && selectedEdgeId === edgeId
-              ? classNames.activeControl
-              : undefined
-          }
-          onClick={() => onClick(edgeId)}
+          onClick={() => onClick(component.edgeId)}
           type="button"
-          variant={ButtonVariant.ACTIVE}
+          variant={getButtonVariant(component)}
         >
           {component.name}
         </Button>
@@ -65,15 +93,11 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
       {(assignedSlots.length === 0 || multiple) && (
         <Button
           key="add"
-          className={
-            selectedComponentType === componentType && selectedEdgeId === null
-              ? classNames.activeControl
-              : undefined
-          }
           onClick={() => onClick()}
           type="button"
+          variant={getButtonVariant(null)}
         >
-          {`- Add ${BuildComponentMeta[componentType].singularName} -`}
+          {`- Add ${singularName} -`}
         </Button>
       )}
     </Div.LabelledControl>
@@ -90,15 +114,6 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
-
-  useEffect(() => {
-    // De-select component slot if build is changed from subnav
-    // TODO Preserve the selected slot instead, need to track the slot index instead of edgeId
-    if (build) {
-      setSelectedComponentType(null);
-      setSelectedEdgeId(null);
-    }
-  }, [build]);
 
   if (!build || !buildGroup) {
     return null;
@@ -163,15 +178,20 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
             {buildGroup.builds.map((otherBuild) => (
               <Button
                 key={otherBuild.id}
-                onClick={() =>
+                onClick={() => {
+                  // De-select component slot if build is changed from subnav
+                  // TODO Preserve the selected slot instead, need to track the slot index instead of edgeId
+                  setSelectedComponentType(null);
+                  setSelectedEdgeId(null);
+
                   navigate("editBuild", {
                     buildGroupId: buildGroup.id,
                     buildId: otherBuild.id,
-                  })
-                }
+                  });
+                }}
                 variant={
                   otherBuild.id === build.id
-                    ? ButtonVariant.ACTIVE
+                    ? ButtonVariant.ACCENT
                     : ButtonVariant.DEFAULT
                 }
               >

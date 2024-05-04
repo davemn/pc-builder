@@ -25,10 +25,8 @@
   align-items: center;
 }
 
-.activeControl {
-  outline: 2px solid var(--accent0);
-  color: var(--accent0);
-  background-color: var(--light90);
+.negativeLabel {
+  color: var(--negative100);
 }
 
 .subnavHeading {
