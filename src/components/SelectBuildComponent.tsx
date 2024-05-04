@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import {
   ComparisonTable,
@@ -10,11 +10,11 @@ import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./SelectBuildComponent.module.css";
+import { BuildContext } from "context/build";
 
 const { Div } = makeClassNamePrimitives(classNames);
 
 interface SelectBuildComponentProps {
-  buildId: number;
   componentType: BuildComponentStoreName;
   edgeId: number | null;
   onRemove: () => void;
@@ -42,29 +42,13 @@ function getTableProps<T extends BuildComponentStoreName>(
 }
 
 export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
-  const { componentType, buildId, edgeId, onRemove, onSelect } = props;
+  const { componentType, edgeId, onRemove, onSelect } = props;
 
-  // Convert edgeId -> component
-  const selectedBuildComponent = useLiveQuery<
-    Schema<BuildComponentStoreName> | undefined
-  >(async () => {
-    if (edgeId === null) {
-      return;
-    }
+  const { build } = useContext(BuildContext);
 
-    const edge = await db.table<EdgeSchema>("edges").get(edgeId);
-
-    if (!edge) {
-      return;
-    }
-
-    const targetId = edge.targetId;
-    const component = await db
-      .table<Schema<BuildComponentStoreName>>(componentType)
-      .get(targetId);
-
-    return component;
-  }, [edgeId]);
+  const selectedBuildComponent = build?.components[componentType].find(
+    (component) => component.edgeId === edgeId
+  );
 
   return (
     <ComparisonTable
@@ -72,16 +56,20 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
       onEditSelected={async (prevComponent, component) => {
         // update build price
         await db.transaction("rw", ["build"], async (tx) => {
-          const build = await tx.table<BuildSchema>("build").get(buildId);
-          if (build) {
-            build.price -= prevComponent.price;
-            build.price += component.price;
-            await tx.table("build").update(buildId, { price: build.price });
+          if (!build) {
+            throw new Error("Save failed: Build not found.");
           }
+          let price = build.price;
+          price -= prevComponent.price;
+          price += component.price;
+          await tx.table("build").update(build.id, { price });
         });
       }}
       onRemove={async (component) => {
         await db.transaction("rw", ["edges", "build"], async (tx) => {
+          if (!build) {
+            throw new Error("Save failed: Build not found.");
+          }
           await tx
             .table("edges")
             .where({
@@ -90,11 +78,8 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
             .delete();
 
           // update build price
-          const build = await tx.table<BuildSchema>("build").get(buildId);
-          if (build) {
-            build.price -= component.price;
-            await tx.table("build").update(buildId, { price: build.price });
-          }
+          const price = build.price - component.price;
+          await tx.table("build").update(build.id, { price });
         });
 
         onRemove();
@@ -104,13 +89,17 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
           "rw",
           ["edges", "build"],
           async (tx) => {
+            if (!build) {
+              throw new Error("Save failed: Build not found.");
+            }
+
             let newEdgeId: number;
 
             if (edgeId === null) {
               newEdgeId = await tx
                 .table<Omit<EdgeSchema, "id">, number>("edges")
                 .add({
-                  sourceId: buildId,
+                  sourceId: build.id,
                   sourceType: "build",
                   targetId: component.id,
                   targetType: componentType,
@@ -123,12 +112,10 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
             }
 
             // update build price
-            const build = await tx.table<BuildSchema>("build").get(buildId);
-            if (build) {
-              build.price -= prevComponent?.price ?? 0;
-              build.price += component.price;
-              await tx.table("build").update(buildId, { price: build.price });
-            }
+            let price = build.price;
+            price -= prevComponent?.price ?? 0;
+            price += component.price;
+            await tx.table("build").update(build.id, { price });
 
             return newEdgeId;
           }

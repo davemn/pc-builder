@@ -1,15 +1,17 @@
-import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
+import { BuildContext, BuildProvider } from "context/build";
+import { BuildGroupContext, BuildGroupProvider } from "context/buildGroup";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
+  ExtendedBuildSchema,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
-import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema, db } from "lib/db";
+import { EdgeSchema, db } from "lib/db";
 import { EditBuildPageProps } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -17,8 +19,12 @@ import classNames from "./EditBuildPage.module.css";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
+interface EditBuildPageInnerProps {
+  navigate: EditBuildPageProps["navigate"];
+}
+
 interface BuildComponentSlotProps {
-  buildId: number;
+  build: ExtendedBuildSchema;
   componentType: BuildComponentStoreName;
   multiple?: boolean;
   selectedComponentType: BuildComponentStoreName | null;
@@ -28,7 +34,7 @@ interface BuildComponentSlotProps {
 
 const BuildComponentSlot = (props: BuildComponentSlotProps) => {
   const {
-    buildId,
+    build,
     componentType,
     multiple = false,
     selectedComponentType,
@@ -36,41 +42,12 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
     onClick,
   } = props;
 
-  const assignedSlots = useLiveQuery<
-    Array<{
-      edgeId: number;
-      component: Schema<BuildComponentStoreName>;
-    }>
-  >(async () => {
-    const edges = await db
-      .table("edges")
-      .where({
-        sourceId: buildId,
-        sourceType: "build",
-        targetType: componentType,
-      })
-      .toArray();
-
-    if (!edges || edges.length === 0) {
-      return [];
-    }
-
-    const components = await db
-      .table(componentType)
-      .where(":id")
-      .anyOf(edges.map((edge) => edge.targetId))
-      .toArray();
-
-    return edges.map((edge) => ({
-      edgeId: edge.id,
-      component: components.find((component) => component.id === edge.targetId),
-    }));
-  }, [buildId, componentType]);
+  const assignedSlots = build.components[componentType];
 
   return (
     <Div.LabelledControl>
       <label>{BuildComponentMeta[componentType].singularName}</label>
-      {(assignedSlots ?? []).map(({ edgeId, component }) => (
+      {assignedSlots.map(({ edgeId, ...component }) => (
         <Button
           key={component.id}
           className={
@@ -85,7 +62,7 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
           {component.name}
         </Button>
       ))}
-      {((assignedSlots ?? []).length === 0 || multiple) && (
+      {(assignedSlots.length === 0 || multiple) && (
         <Button
           key="add"
           className={
@@ -103,47 +80,29 @@ const BuildComponentSlot = (props: BuildComponentSlotProps) => {
   );
 };
 
-export const EditBuildPage = (props: EditBuildPageProps) => {
-  const { buildGroupId, buildId, navigate } = props;
+const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
+  const { navigate } = props;
+
+  const { buildGroup } = useContext(BuildGroupContext);
+  const { build } = useContext(BuildContext);
 
   /* Sets the content pane */
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
 
-  const buildGroup = useLiveQuery<BuildGroupSchema>(
-    () => db.table("buildGroup").get(buildGroupId),
-    [buildGroupId]
-  );
+  useEffect(() => {
+    // De-select component slot if build is changed from subnav
+    // TODO Preserve the selected slot instead, need to track the slot index instead of edgeId
+    if (build) {
+      setSelectedComponentType(null);
+      setSelectedEdgeId(null);
+    }
+  }, [build]);
 
-  const builds = useLiveQuery<Array<BuildSchema>, []>(
-    async () => {
-      const edges = await db
-        .table<EdgeSchema>("edges")
-        .where({
-          sourceId: buildGroupId,
-          sourceType: "buildGroup",
-          targetType: "build",
-        })
-        .toArray();
-
-      if (!edges || edges.length === 0) {
-        return [];
-      }
-
-      const builds = await db
-        .table<BuildSchema>("build")
-        .where(":id")
-        .anyOf(edges.map((edge) => edge.targetId))
-        .toArray();
-
-      return builds;
-    },
-    [buildGroupId],
-    []
-  );
-
-  const build = builds?.find((build) => build.id === buildId);
+  if (!build || !buildGroup) {
+    return null;
+  }
 
   return (
     <Layout
@@ -165,12 +124,12 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
                 await tx
                   .table<EdgeSchema>("edges")
                   .where({
-                    sourceId: buildId,
+                    sourceId: build.id,
                     sourceType: "build",
                   })
                   .delete();
                 // Reset price
-                await db.table("build").update(buildId, { price: 0 });
+                await db.table("build").update(build.id, { price: 0 });
               });
             }}
           >
@@ -184,7 +143,7 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
               onChange={async (e) => {
                 await db
                   .table("buildGroup")
-                  .update(buildGroupId, { name: e.target.value });
+                  .update(buildGroup.id, { name: e.target.value });
               }}
               value={buildGroup?.name ?? ""}
             />
@@ -201,19 +160,22 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
         <>
           <h2 className={classNames.subnavHeading}>Builds</h2>
           <Div.ScrollContainer>
-            {builds.map((build) => (
+            {buildGroup.builds.map((otherBuild) => (
               <Button
-                key={build.id}
+                key={otherBuild.id}
                 onClick={() =>
-                  navigate("editBuild", { buildGroupId, buildId: build.id })
+                  navigate("editBuild", {
+                    buildGroupId: buildGroup.id,
+                    buildId: otherBuild.id,
+                  })
                 }
                 variant={
-                  build.id === buildId
+                  otherBuild.id === build.id
                     ? ButtonVariant.ACTIVE
                     : ButtonVariant.DEFAULT
                 }
               >
-                {build.name}
+                {otherBuild.name}
               </Button>
             ))}
           </Div.ScrollContainer>
@@ -230,7 +192,7 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
               onChange={async (e) => {
                 await db
                   .table("build")
-                  .update(buildId, { name: e.target.value });
+                  .update(build.id, { name: e.target.value });
               }}
               value={build?.name ?? ""}
             />
@@ -239,7 +201,7 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
           {OrderedBuildComponentStoreNames.map((componentType) => (
             <BuildComponentSlot
               key={componentType}
-              buildId={buildId}
+              build={build}
               componentType={componentType}
               selectedComponentType={selectedComponentType}
               selectedEdgeId={selectedEdgeId}
@@ -254,7 +216,6 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
       content={
         selectedComponentType && (
           <SelectBuildComponent
-            buildId={buildId}
             edgeId={selectedEdgeId}
             componentType={selectedComponentType}
             onRemove={() => {
@@ -268,5 +229,17 @@ export const EditBuildPage = (props: EditBuildPageProps) => {
       }
       emptyStateText="Select a component to add to the build"
     />
+  );
+};
+
+export const EditBuildPage = (props: EditBuildPageProps) => {
+  const { buildGroupId, buildId, navigate } = props;
+
+  return (
+    <BuildGroupProvider buildGroupId={buildGroupId}>
+      <BuildProvider buildId={buildId}>
+        <EditBuildPageInner navigate={navigate} />
+      </BuildProvider>
+    </BuildGroupProvider>
   );
 };

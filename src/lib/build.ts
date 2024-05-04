@@ -8,12 +8,34 @@ import {
   RamColumns,
   StorageColumns,
 } from "lib/columns";
-import { Schema, StoreName } from "lib/db";
+import {
+  BuildGroupSchema,
+  BuildSchema,
+  EdgeSchema,
+  Schema,
+  StoreName,
+} from "lib/db";
 
 export type BuildComponentStoreName = Exclude<
   StoreName,
   "edges" | "build" | "buildGroup"
 >;
+
+/** Unused. */
+export type BuildComponentEdgeSchema = EdgeSchema<
+  "build",
+  BuildComponentStoreName
+>;
+
+export type ExtendedBuildSchema = BuildSchema & {
+  components: {
+    [T in BuildComponentStoreName]: Array<Schema<T> & { edgeId: number }>;
+  };
+};
+
+export type ExtendedBuildGroupSchema = BuildGroupSchema & {
+  builds: Array<BuildSchema>;
+};
 
 // Be careful when adding new component types, the Typescript compiler doesn't enforce
 // that every store name is included in this array

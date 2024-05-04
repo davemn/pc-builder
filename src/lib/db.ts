@@ -14,12 +14,15 @@ export type StoreName =
   | "mobo"
   | "cooler";
 
-export interface EdgeSchema {
+export interface EdgeSchema<
+  T extends StoreName = StoreName,
+  U extends StoreName = StoreName,
+> {
   id: number;
   sourceId: number;
-  sourceType: StoreName;
+  sourceType: T;
   targetId: number;
-  targetType: StoreName;
+  targetType: U;
 }
 
 export interface BuildSchema {
