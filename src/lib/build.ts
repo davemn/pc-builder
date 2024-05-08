@@ -80,12 +80,12 @@ type BuildComponentRecord = {
   [key in BuildComponentStoreName]: BuildComponentDefinition<key>;
 };
 
-const columnStringEquals = (colA: string, colB: string) => {
+function columnStringEquals(colA: string, colB: string) {
   return (
     colA.toLowerCase().replace(/[^a-z0-9]/g, "") ===
     colB.toLowerCase().replace(/[^a-z0-9]/g, "")
   );
-};
+}
 
 export const BuildComponentMeta: BuildComponentRecord = {
   cpu: {
@@ -94,10 +94,26 @@ export const BuildComponentMeta: BuildComponentRecord = {
     columns: CpuColumns,
     getIsBuildCompatible: (component, build) => {
       const [assignedMobo] = build.components.mobo;
-      if (!assignedMobo) {
-        return true;
+      if (
+        assignedMobo &&
+        !columnStringEquals(assignedMobo.socket, component.socket)
+      ) {
+        return false;
       }
-      return columnStringEquals(assignedMobo.socket, component.socket);
+      const cpuCooler = build.components.cooler.find(
+        (cooler) => cooler.type === "cpu"
+      );
+      // TODO warning if cooler is above but too close to CPU's TDP, for overclocking headroom
+      // Might need more fields on CpuSchema (boostTdp?)
+      if (
+        cpuCooler &&
+        cpuCooler.coolingWatts > 0 && // TODO how to surface a partially specified component as having unknown compatibility?
+        cpuCooler.coolingWatts < component.tdp
+      ) {
+        return false;
+      }
+      // TODO check power requirements
+      return true;
     },
   },
   gpu: {

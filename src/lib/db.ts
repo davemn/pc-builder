@@ -118,10 +118,15 @@ export interface CoolerSchema {
   brand: string;
   name: string;
   price: number;
+  /* TODO type was meant to be "water" | "air", but might be better used for
+   * "gpu" | "cpu" | "ram" | "ssd" | "case" to separate cooling requirements
+   * for different components.
+   */
   type: string;
   size: string;
   fanDiameter: number;
-  // TODO TDP, Socket compatibility, fan count
+  coolingWatts: number;
+  // TODO Socket compatibility (including multiple), fan count, noise level
   // TODO split size into separate dimensions
 }
 
@@ -191,6 +196,9 @@ export class BrowserDatabase extends Dexie {
           });
         }
       });
+    this.version(4).stores({
+      cooler: "++id, brand, name, price, type, size, fanDiameter, coolingWatts",
+    });
   }
 }
 

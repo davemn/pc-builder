@@ -1,4 +1,5 @@
-import { Schema, StoreName } from "lib/db";
+import { BuildComponentStoreName } from "lib/build";
+import { Schema } from "lib/db";
 
 const QualityFn = {
   LESS_IS_BETTER: (a: number, b: number) => Math.sign(b - a),
@@ -16,7 +17,7 @@ export type UnitDefinition =
       format: (value: string) => string;
     };
 
-export interface ColumnDefinition<T extends StoreName> {
+export interface ColumnDefinition<T extends BuildComponentStoreName> {
   label: string;
   // plain "keyof" becomes "string | number | symbol", per https://stackoverflow.com/a/65420892
   name: Extract<keyof Schema<T>, string>;
@@ -27,13 +28,16 @@ export const Unit: Record<string, UnitDefinition> = {
   WATTS: {
     dataType: "numeric",
     format: (value: number) => `${value} W`,
-    // getBest: (a: number, b: number) => Math.min(a, b),
     compareQuality: QualityFn.LESS_IS_BETTER,
+  },
+  COOLING_WATTS: {
+    dataType: "numeric",
+    format: (value: number) => `${value} W`,
+    compareQuality: QualityFn.MORE_IS_BETTER,
   },
   DOLLARS: {
     dataType: "numeric",
     format: (value: number) => `$${Math.ceil(value)}`,
-    // getBest: (a: number, b: number) => Math.min(a, b),
     compareQuality: QualityFn.LESS_IS_BETTER,
   },
   MILLIMETERS: {
@@ -86,10 +90,6 @@ export const Unit: Record<string, UnitDefinition> = {
     format: (value: string) => value,
   },
 };
-
-export const BuildColumns: Array<ColumnDefinition<"build">> = [
-  { label: "Name", name: "name", unit: Unit.NONE },
-];
 
 export const CpuColumns: Array<ColumnDefinition<"cpu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
@@ -173,7 +173,7 @@ export const CoolerColumns: Array<ColumnDefinition<"cooler">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
   { label: "Price", name: "price", unit: Unit.DOLLARS },
-  // type, size, fanDiameter
+  { label: "Watts of Cooling", name: "coolingWatts", unit: Unit.COOLING_WATTS },
   { label: "Type", name: "type", unit: Unit.NONE },
   { label: "Size", name: "size", unit: Unit.NONE },
   { label: "Fan Diameter", name: "fanDiameter", unit: Unit.MILLIMETERS },
