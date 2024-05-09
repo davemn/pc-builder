@@ -108,6 +108,7 @@ export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
   { label: "Brand", name: "brand", unit: Unit.NONE },
   { label: "Price", name: "price", unit: Unit.DOLLARS },
   { label: "VRAM", name: "vram", unit: Unit.GIGABYTES },
+  { label: "Wattage", name: "wattage", unit: Unit.WATTS },
   { label: "TDP", name: "tdp", unit: Unit.WATTS },
   { label: "HDMI Outputs", name: "hdmiOutputs", unit: Unit.COUNT },
   {
@@ -141,7 +142,8 @@ export const PsuColumns: Array<ColumnDefinition<"psu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
   { label: "Price", name: "price", unit: Unit.DOLLARS },
-  { label: "Wattage", name: "wattage", unit: Unit.WATTS },
+  { label: "Wattage (Sustained)", name: "sustainedWattage", unit: Unit.WATTS },
+  { label: "Wattage (Peak)", name: "peakWattage", unit: Unit.WATTS },
   { label: "ATX Version", name: "atxVersion", unit: Unit.NONE },
   { label: "Efficiency Rating", name: "efficiencyRating", unit: Unit.NONE },
 ];

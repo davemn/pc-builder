@@ -87,19 +87,40 @@ function columnStringEquals(colA: string, colB: string) {
   );
 }
 
+function buildRequiredPower(
+  build: ExtendedBuildSchema,
+  excludeComponent?: BuildComponentStoreName
+) {
+  let baseWatts = 0,
+    peakWatts = 0;
+
+  if (excludeComponent !== "cpu") {
+    baseWatts += build.components["cpu"][0]?.tdp ?? 0;
+  }
+  if (excludeComponent !== "gpu") {
+    baseWatts += build.components["gpu"][0]?.wattage ?? 0;
+  }
+  // TODO cpu & ram. Power specs for those aren't usually listed though...
+
+  // TODO calculate expected peak wattage
+  peakWatts = baseWatts;
+
+  return { baseWatts, peakWatts };
+}
+
 export const BuildComponentMeta: BuildComponentRecord = {
   cpu: {
     singularName: "CPU",
     pluralName: "CPUs",
     columns: CpuColumns,
-    getIsBuildCompatible: (component, build) => {
-      const [assignedMobo] = build.components.mobo;
-      if (
-        assignedMobo &&
-        !columnStringEquals(assignedMobo.socket, component.socket)
-      ) {
+    getIsBuildCompatible: (cpu, build) => {
+      // (1) Check if CPU socket matches motherboard socket
+      const [mobo] = build.components.mobo;
+      if (mobo && cpu.socket && !columnStringEquals(mobo.socket, cpu.socket)) {
         return false;
       }
+
+      // (2) Check if CPU TDP is within cooler's cooling capacity
       const cpuCooler = build.components.cooler.find(
         (cooler) => cooler.type === "cpu"
       );
@@ -107,12 +128,25 @@ export const BuildComponentMeta: BuildComponentRecord = {
       // Might need more fields on CpuSchema (boostTdp?)
       if (
         cpuCooler &&
+        cpu.tdp > 0 &&
         cpuCooler.coolingWatts > 0 && // TODO how to surface a partially specified component as having unknown compatibility?
-        cpuCooler.coolingWatts < component.tdp
+        cpuCooler.coolingWatts < cpu.tdp
       ) {
         return false;
       }
-      // TODO check power requirements
+
+      // (3) Check if PSU wattage is sufficient
+      const { baseWatts } = buildRequiredPower(build, "cpu");
+      const [assignedPsu] = build.components.psu;
+
+      if (
+        assignedPsu &&
+        cpu.tdp > 0 &&
+        assignedPsu.sustainedWattage < baseWatts + cpu.tdp
+      ) {
+        return false;
+      }
+
       return true;
     },
   },
@@ -144,7 +178,16 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Power Supply",
     pluralName: "Power Supplies",
     columns: PsuColumns,
-    getIsBuildCompatible: (component) => {
+    getIsBuildCompatible: (psu, build) => {
+      const { baseWatts, peakWatts } = buildRequiredPower(build);
+
+      if (psu.sustainedWattage > 0 && psu.sustainedWattage < baseWatts) {
+        return false;
+      }
+      if (psu.peakWattage > 0 && psu.peakWattage < peakWatts) {
+        return false;
+      }
+
       return true;
     },
   },
@@ -152,7 +195,17 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Motherboard",
     pluralName: "Motherboards",
     columns: MoboColumns,
-    getIsBuildCompatible: (component) => {
+    getIsBuildCompatible: (mobo, build) => {
+      const [cpu] = build.components.cpu;
+      if (
+        cpu &&
+        cpu.socket &&
+        mobo.socket &&
+        !columnStringEquals(mobo.socket, cpu.socket)
+      ) {
+        return false;
+      }
+
       return true;
     },
   },
@@ -160,7 +213,23 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Cooler",
     pluralName: "Coolers",
     columns: CoolerColumns,
-    getIsBuildCompatible: (component) => {
+    getIsBuildCompatible: (cooler, build) => {
+      switch (cooler.type) {
+        case "cpu": {
+          const cpu = build.components.cpu[0];
+          if (
+            cpu &&
+            cpu.tdp > 0 &&
+            cooler.coolingWatts > 0 &&
+            cooler.coolingWatts < cpu.tdp
+          ) {
+            return false;
+          }
+          break;
+        }
+        default:
+      }
+
       return true;
     },
   },

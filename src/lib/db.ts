@@ -56,6 +56,7 @@ export interface GpuSchema {
   price: number;
   vram: number;
   tdp: number;
+  wattage: number;
   hdmiOutputs: number;
   displayPortOutputs: number;
 }
@@ -87,7 +88,8 @@ export interface PsuSchema {
   brand: string;
   name: string;
   price: number;
-  wattage: number;
+  sustainedWattage: number;
+  peakWattage: number;
   atxVersion: string;
   efficiencyRating: string;
 }
@@ -197,7 +199,15 @@ export class BrowserDatabase extends Dexie {
         }
       });
     this.version(4).stores({
+      // add coolingWatts
       cooler: "++id, brand, name, price, type, size, fanDiameter, coolingWatts",
+    });
+    this.version(5).stores({
+      // wattage -> sustainedWattage
+      // add peakWattage
+      psu: "++id, brand, name, price, sustainedWattage, peakWattage, atxVersion, efficiencyRating",
+      // add wattage
+      gpu: "++id, brand, name, price, vram, tdp, wattage, hdmiOutputs, displayPortOutputs",
     });
   }
 }
