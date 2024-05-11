@@ -36,18 +36,23 @@ export function useBuild(
           (edge) => edge.targetType === componentType
         );
 
+        // De-dupe edge target IDs, the same component can be assigned to a build multiple times
+        const uniqueEdgeTargetIds = Array.from(
+          new Set(edgesOfType.map((edge) => edge.targetId))
+        );
+
         const componentsOfType = await db
           .table(componentType)
           .where(":id")
-          .anyOf(edgesOfType.map((edge) => edge.targetId))
+          .anyOf(uniqueEdgeTargetIds)
           .toArray();
 
-        byType[componentType] = componentsOfType.flatMap((component) => {
-          const edge = edgesOfType.find(
-            (edge) => edge.targetId === component.id
+        byType[componentType] = edgesOfType.flatMap((edge) => {
+          const component = componentsOfType.find(
+            (component) => component.id === edge.targetId
           );
 
-          if (!edge) {
+          if (!component) {
             // skip any dangling edges pointing to components that have been deleted
             return [];
           }

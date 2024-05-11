@@ -71,6 +71,7 @@ export interface RamSchema {
   type: string;
 }
 
+// TODO split into M2StorageSchema, SataStorageSchema
 export interface StorageSchema {
   id: number;
   brand: string;
@@ -103,8 +104,6 @@ export interface MoboSchema {
   formFactor: string;
   ramSlots: number;
   ramType: string;
-  pcieSlots: number;
-  pcieVersion: string;
   m2Slots: number;
   usb40Ports: number;
   usb20Ports: number;
@@ -112,7 +111,22 @@ export interface MoboSchema {
   usb5Ports: number;
   usbSlowPorts: number;
   ethernetGigabitRate: number;
-  // TODO SATA ports
+  pcie5x16Slots: number;
+  pcie5x8Slots: number;
+  pcie5x4Slots: number;
+  pcie5x2Slots: number;
+  pcie5x1Slots: number;
+  pcie4x16Slots: number;
+  pcie4x8Slots: number;
+  pcie4x4Slots: number;
+  pcie4x2Slots: number;
+  pcie4x1Slots: number;
+  pcie3x16Slots: number;
+  pcie3x8Slots: number;
+  pcie3x4Slots: number;
+  pcie3x2Slots: number;
+  pcie3x1Slots: number;
+  // TODO add sataPorts, sataGigabitRate
 }
 
 export interface CoolerSchema {
@@ -161,8 +175,12 @@ export class BrowserDatabase extends Dexie {
       psu: "++id, brand, name, price, wattage, atxVersion, efficiencyRating",
       mobo: "++id, brand, name, price, socket, formFactor, ramSlots, ramType, pcieSlots, pcieVersion, m2Slots, usb40Ports, usb20Ports, usb10Ports, usb5Ports, usbSlowPorts, ethernetGigabitRate",
       cooler: "++id, brand, name, price, type, size, fanDiameter",
-      // TODO customize these
+      // TODO other component types:
       // case: "++id, brand, name, price, formFactor, frontUsbPorts, frontAudioPorts, driveBays, maxGpuLength, maxCpuCoolerHeight, maxPsuLength, maxRadiatorLength, maxRadiatorWidth, maxRadiatorHeight, maxFanLength, maxFanWidth, maxFanHeight, maxFanCount, maxDustFilterCount",
+      // nvmeCarrierCard: "++id, brand, name, price, type, pcieVersion, m2Slots",
+      // rgbLighting: "++id, brand, name, price, type, color, brightness",
+      // soundCard: "++id, brand, name, price, type, spdifOutputs, spdifInputs, line35mmOutputs, headphone35mmOutputs, microphone35mmInputs"
+      // monitor: "++id, brand, name, price, resolution, refreshRate, panelType, responseTime, aspectRatio, size, vesaMount, hdmiInputs, displayPortInputs, usbPorts, speakers, freesync, gsync, curved, color, brightness, contrast, viewingAngle, powerConsumption, weight, height, width, depth",
     });
     this.version(2)
       .stores({
@@ -202,13 +220,31 @@ export class BrowserDatabase extends Dexie {
       // add coolingWatts
       cooler: "++id, brand, name, price, type, size, fanDiameter, coolingWatts",
     });
-    this.version(5).stores({
-      // wattage -> sustainedWattage
-      // add peakWattage
-      psu: "++id, brand, name, price, sustainedWattage, peakWattage, atxVersion, efficiencyRating",
-      // add wattage
-      gpu: "++id, brand, name, price, vram, tdp, wattage, hdmiOutputs, displayPortOutputs",
-    });
+    this.version(5)
+      .stores({
+        // wattage -> sustainedWattage
+        // add peakWattage
+        psu: "++id, brand, name, price, sustainedWattage, peakWattage, atxVersion, efficiencyRating",
+        // add wattage
+        gpu: "++id, brand, name, price, vram, tdp, wattage, hdmiOutputs, displayPortOutputs",
+        // (pcieSlots, pcieVersion) -> pcie5x16Slots, pcie5x8Slots, pcie5x4Slots, pcie5x2Slots, pcie5x1Slots, pcie4x16Slots, pcie4x8Slots, pcie4x4Slots, pcie4x2Slots, pcie4x1Slots, pcie3x16Slots, pcie3x8Slots, pcie3x4Slots, pcie3x2Slots, pcie3x1Slots
+        mobo: "++id, brand, name, price, socket, formFactor, ramSlots, ramType, m2Slots, usb40Ports, usb20Ports, usb10Ports, usb5Ports, usbSlowPorts, ethernetGigabitRate, pcie5x16Slots, pcie5x8Slots, pcie5x4Slots, pcie5x2Slots, pcie5x1Slots, pcie4x16Slots, pcie4x8Slots, pcie4x4Slots, pcie4x2Slots, pcie4x1Slots, pcie3x16Slots, pcie3x8Slots, pcie3x4Slots, pcie3x2Slots, pcie3x1Slots",
+      })
+      .upgrade(async (tx) => {
+        // At the time of this upgrade only the motherboard table actually has any data in it
+        return tx
+          .table<
+            MoboSchema & {
+              pcieSlots?: number;
+              pcieVersion?: string;
+            }
+          >("mobo")
+          .toCollection()
+          .modify((mobo) => {
+            delete mobo.pcieSlots;
+            delete mobo.pcieVersion;
+          });
+      });
   }
 }
 

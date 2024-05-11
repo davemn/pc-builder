@@ -45,3 +45,9 @@
 .scrollContainer > * {
   flex-shrink: 0;
 }
+
+.emptySlot {
+  color: var(--light90);
+  font-size: var(--fontSizeBody);
+  text-align: center;
+}

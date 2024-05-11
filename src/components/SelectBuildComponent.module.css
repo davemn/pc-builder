@@ -1,0 +1,22 @@
+.container {
+  position: relative;
+}
+
+.warningBanner {
+  background-color: var(--negative100);
+  border-radius: 8px;
+  color: var(--light100);
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+  padding: 12px;
+  position: sticky;
+  text-align: center;
+  top: 0;
+  z-index: 10;
+}
+
+.warningBannerText {
+  display: block;
+  max-width: 80%;
+}

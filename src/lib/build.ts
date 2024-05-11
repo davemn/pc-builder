@@ -67,6 +67,7 @@ export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
     component: Schema<T>,
     build: ExtendedBuildSchema
   ) => boolean;
+  getMaxCount: (build: ExtendedBuildSchema) => number;
 }
 
 // From https://stackoverflow.com/a/51691257
@@ -149,13 +150,49 @@ export const BuildComponentMeta: BuildComponentRecord = {
 
       return true;
     },
+    getMaxCount: () => 1, // TODO multi-cpu builds
   },
   gpu: {
+    // TODO nest singularName, pluralName into "strings", add strings.tooManyWarning, etc.
     singularName: "GPU",
     pluralName: "GPUs",
     columns: GpuColumns,
-    getIsBuildCompatible: (component) => {
+    getIsBuildCompatible: (gpu, build) => {
+      // (1) Check if motherboard has at least one PCIe x16 slot
+      if (BuildComponentMeta.gpu.getMaxCount(build) === 0) {
+        return false;
+      }
+
+      // (2) Check if PSU wattage is sufficient
+      // TODO how to check if PSU wattage is sufficient for multiple GPUs? Passing GPU here
+      // gives a power requirement for the current build w/ zero GPUs instead of e.g. 1 of 2.
+      const { baseWatts } = buildRequiredPower(build, "gpu");
+      const [psu] = build.components.psu;
+
+      if (
+        psu &&
+        gpu.wattage > 0 &&
+        psu.sustainedWattage < baseWatts + gpu.wattage
+      ) {
+        return false;
+      }
+
+      // (3) TODO check if PSU connectors are sufficient (needs schema updates)
+      // (4) TODO check if GPU length fits in case (needs schema updates)
+
       return true;
+    },
+    getMaxCount: (build) => {
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        return -1;
+      }
+
+      const totalX16Slots =
+        mobo.pcie5x16Slots + mobo.pcie4x16Slots + mobo.pcie3x16Slots;
+
+      return totalX16Slots;
     },
   },
   ram: {
@@ -165,6 +202,15 @@ export const BuildComponentMeta: BuildComponentRecord = {
     getIsBuildCompatible: (component) => {
       return true;
     },
+    getMaxCount: (build) => {
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        return -1;
+      }
+
+      return mobo.ramSlots;
+    },
   },
   storage: {
     singularName: "SSD",
@@ -172,6 +218,15 @@ export const BuildComponentMeta: BuildComponentRecord = {
     columns: StorageColumns,
     getIsBuildCompatible: (component) => {
       return true;
+    },
+    getMaxCount: (build) => {
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        return -1;
+      }
+
+      return mobo.m2Slots;
     },
   },
   psu: {
@@ -190,6 +245,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
 
       return true;
     },
+    getMaxCount: () => 1,
   },
   mobo: {
     singularName: "Motherboard",
@@ -208,6 +264,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
 
       return true;
     },
+    getMaxCount: () => 1,
   },
   cooler: {
     singularName: "Cooler",
@@ -232,5 +289,6 @@ export const BuildComponentMeta: BuildComponentRecord = {
 
       return true;
     },
+    getMaxCount: () => -1,
   },
 };

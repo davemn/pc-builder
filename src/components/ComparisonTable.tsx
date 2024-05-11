@@ -6,9 +6,9 @@ import { Form } from "components/Form";
 import { Modal } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
-import { ExtendedBuildSchema } from "lib/build";
+import { BuildComponentStoreName, ExtendedBuildSchema } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
-import { db, Schema, StoreName } from "lib/db";
+import { db, Schema } from "lib/db";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./ComparisonTable.module.css";
@@ -16,7 +16,7 @@ import classNames from "./ComparisonTable.module.css";
 /* These are each preemptively populated for every class, but only a few mappings will be used. */
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
-export interface ComparisonTableProps<T extends StoreName> {
+export interface ComparisonTableProps<T extends BuildComponentStoreName> {
   dataStoreName: T;
   dataStoreLabel: string;
   columns: Array<ColumnDefinition<T>>;
@@ -62,7 +62,7 @@ function sortByMultiple<T>(
   });
 }
 
-interface TableRowProps<T extends StoreName> {
+interface TableRowProps<T extends BuildComponentStoreName> {
   columns: ComparisonTableProps<T>["columns"];
   compareToRow?: Schema<T>;
   onEdit: (id: number) => void;
@@ -75,7 +75,9 @@ interface TableRowProps<T extends StoreName> {
   selectButtonVariant?: ButtonVariant;
 }
 
-const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
+const TableRow = <T extends BuildComponentStoreName>(
+  props: TableRowProps<T>
+) => {
   const {
     columns,
     compareToRow,
@@ -190,7 +192,7 @@ const TableRow = <T extends StoreName>(props: TableRowProps<T>) => {
   );
 };
 
-export const ComparisonTable = <T extends StoreName>(
+export const ComparisonTable = <T extends BuildComponentStoreName>(
   props: ComparisonTableProps<T>
 ) => {
   const {

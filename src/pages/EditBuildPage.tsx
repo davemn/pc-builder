@@ -26,10 +26,12 @@ interface EditBuildPageInnerProps {
 interface BuildComponentSlotProps<T extends BuildComponentStoreName> {
   build: ExtendedBuildSchema;
   componentType: T;
-  multiple?: boolean;
   selectedComponentType: BuildComponentStoreName | null;
   selectedEdgeId: number | null;
-  onClick: (maybeEdgeId?: number) => void;
+  onClick: (
+    maybeEdgeId: number | null,
+    selectedSlotIsOutOfBounds: boolean
+  ) => void;
 }
 
 const BuildComponentSlot = <T extends BuildComponentStoreName>(
@@ -38,31 +40,29 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
   const {
     build,
     componentType,
-    multiple = false,
     selectedComponentType,
     selectedEdgeId,
     onClick,
   } = props;
 
-  const { singularName, getIsBuildCompatible } =
+  const { singularName, getIsBuildCompatible, getMaxCount } =
     BuildComponentMeta[componentType];
   const assignedSlots = build.components[componentType];
   const hasIncompatibleSlots = assignedSlots.some(
     (component) => !getIsBuildCompatible(component, build)
   );
+  const maxSlots = getMaxCount(build);
 
   const getButtonVariant = (
-    component: (Schema<T> & { edgeId: number }) | null
+    component: Schema<T> & { edgeId: number },
+    slotIndex: number
   ) => {
     const isSelected =
       selectedComponentType === componentType &&
       selectedEdgeId === (component?.edgeId ?? null);
 
-    if (component === null) {
-      return isSelected ? ButtonVariant.DEFAULT_ACTIVE : ButtonVariant.DEFAULT;
-    }
-
-    const isCompatible = getIsBuildCompatible(component, build);
+    const isCompatible =
+      slotIndex < maxSlots && getIsBuildCompatible(component, build);
 
     if (!isCompatible) {
       return isSelected
@@ -73,6 +73,13 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
     return isSelected ? ButtonVariant.ACCENT_ACTIVE : ButtonVariant.ACCENT;
   };
 
+  const getAddButtonVariant = () => {
+    const isSelected =
+      selectedComponentType === componentType && selectedEdgeId === null;
+
+    return isSelected ? ButtonVariant.DEFAULT_ACTIVE : ButtonVariant.DEFAULT;
+  };
+
   return (
     <Div.LabelledControl>
       <label
@@ -80,25 +87,28 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
       >
         {singularName}
       </label>
-      {assignedSlots.map((component) => (
+      {assignedSlots.map((component, index) => (
         <Button
-          key={component.id}
-          onClick={() => onClick(component.edgeId)}
+          key={component.edgeId}
+          onClick={() => onClick(component.edgeId, index >= maxSlots)}
           type="button"
-          variant={getButtonVariant(component)}
+          variant={getButtonVariant(component, index)}
         >
           {component.name}
         </Button>
       ))}
-      {(assignedSlots.length === 0 || multiple) && (
+      {(maxSlots === -1 || assignedSlots.length < maxSlots) && (
         <Button
           key="add"
-          onClick={() => onClick()}
+          onClick={() => onClick(null, false)}
           type="button"
-          variant={getButtonVariant(null)}
+          variant={getAddButtonVariant()}
         >
           {`- Add ${singularName} -`}
         </Button>
+      )}
+      {assignedSlots.length === 0 && maxSlots === 0 && (
+        <Div.EmptySlot>- No available slots -</Div.EmptySlot>
       )}
     </Div.LabelledControl>
   );
@@ -114,6 +124,8 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<number | null>(null);
+  const [selectedHasOutOfBoundsWarning, setSelectedHasOutOfBoundsWarning] =
+    useState<boolean>(false);
 
   if (!build || !buildGroup) {
     return null;
@@ -225,9 +237,10 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
               componentType={componentType}
               selectedComponentType={selectedComponentType}
               selectedEdgeId={selectedEdgeId}
-              onClick={(maybeEdgeId) => {
+              onClick={(maybeEdgeId, selectedSlotIsOutOfBounds) => {
                 setSelectedComponentType(componentType);
-                setSelectedEdgeId(maybeEdgeId ?? null);
+                setSelectedEdgeId(maybeEdgeId);
+                setSelectedHasOutOfBoundsWarning(selectedSlotIsOutOfBounds);
               }}
             />
           ))}
@@ -240,10 +253,12 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
             componentType={selectedComponentType}
             onRemove={() => {
               setSelectedEdgeId(null);
+              setSelectedHasOutOfBoundsWarning(false);
             }}
             onSelect={(edgeId) => {
               setSelectedEdgeId(edgeId);
             }}
+            showOutOfBoundsWarning={selectedHasOutOfBoundsWarning}
           />
         )
       }

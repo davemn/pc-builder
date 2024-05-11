@@ -156,9 +156,29 @@ export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
   { label: "Form Factor", name: "formFactor", unit: Unit.NONE },
   { label: "RAM Slots", name: "ramSlots", unit: Unit.COUNT },
   { label: "RAM Type", name: "ramType", unit: Unit.NONE },
-  { label: "PCIe Slots", name: "pcieSlots", unit: Unit.COUNT },
-  { label: "PCIe Version", name: "pcieVersion", unit: Unit.NONE },
+
+  { label: "PCIe 5.0 x16 Slots", name: "pcie5x16Slots", unit: Unit.COUNT },
+  { label: "PCIe 4.0 x16 Slots", name: "pcie4x16Slots", unit: Unit.COUNT },
+  { label: "PCIe 3.0 x16 Slots", name: "pcie3x16Slots", unit: Unit.COUNT },
+
+  { label: "PCIe 5.0 x8 Slots", name: "pcie5x8Slots", unit: Unit.COUNT },
+  { label: "PCIe 4.0 x8 Slots", name: "pcie4x8Slots", unit: Unit.COUNT },
+  { label: "PCIe 3.0 x8 Slots", name: "pcie3x8Slots", unit: Unit.COUNT },
+
+  { label: "PCIe 5.0 x4 Slots", name: "pcie5x4Slots", unit: Unit.COUNT },
+  { label: "PCIe 4.0 x4 Slots", name: "pcie4x4Slots", unit: Unit.COUNT },
+  { label: "PCIe 3.0 x4 Slots", name: "pcie3x4Slots", unit: Unit.COUNT },
+
+  { label: "PCIe 5.0 x2 Slots", name: "pcie5x2Slots", unit: Unit.COUNT },
+  { label: "PCIe 4.0 x2 Slots", name: "pcie4x2Slots", unit: Unit.COUNT },
+  { label: "PCIe 3.0 x2 Slots", name: "pcie3x2Slots", unit: Unit.COUNT },
+
+  { label: "PCIe 5.0 x1 Slots", name: "pcie5x1Slots", unit: Unit.COUNT },
+  { label: "PCIe 4.0 x1 Slots", name: "pcie4x1Slots", unit: Unit.COUNT },
+  { label: "PCIe 3.0 x1 Slots", name: "pcie3x1Slots", unit: Unit.COUNT },
+
   { label: "M.2 Slots", name: "m2Slots", unit: Unit.COUNT },
+
   { label: "USB 40 GBps Slots", name: "usb40Ports", unit: Unit.COUNT },
   { label: "USB 20 GBps Slots", name: "usb20Ports", unit: Unit.COUNT },
   { label: "USB 10 GBps Slots", name: "usb10Ports", unit: Unit.COUNT },
