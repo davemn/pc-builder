@@ -4,8 +4,14 @@ import {
   ComparisonTable,
   ComparisonTableProps,
 } from "components/ComparisonTable";
-import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { EdgeSchema, db } from "lib/db";
+import {
+  BuildComponentMeta,
+  BuildComponentStoreName,
+  Compatibility,
+  ExtendedBuildSchema,
+  overallCompatibility,
+} from "lib/build";
+import { EdgeSchema, Schema, db } from "lib/db";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./SelectBuildComponent.module.css";
@@ -37,7 +43,13 @@ function getTableProps<T extends BuildComponentStoreName>(
     dataStoreName: componentType,
     dataStoreLabel: componentMeta.pluralName,
     columns: componentMeta.columns,
-    getIsBuildCompatible: componentMeta.getIsBuildCompatible,
+    getIsBuildCompatible: (component, build) => {
+      return (
+        overallCompatibility(
+          componentMeta.getCompatibilityChecks(component, build)
+        ) !== Compatibility.INCOMPATIBLE
+      );
+    },
   };
 }
 

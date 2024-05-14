@@ -9,7 +9,8 @@ export type StoreName =
   | "cpu"
   | "gpu"
   | "ram"
-  | "storage"
+  | "m2Storage"
+  | "sataStorage"
   | "psu"
   | "mobo"
   | "cooler";
@@ -71,15 +72,27 @@ export interface RamSchema {
   type: string;
 }
 
-// TODO split into M2StorageSchema, SataStorageSchema
-export interface StorageSchema {
+export interface M2StorageSchema {
   id: number;
   brand: string;
   name: string;
   price: number;
   capacity: number;
-  formFactor: string;
-  interface: string;
+  moduleCode: string; // e.g. 2280, 22110
+  moduleKey: string; // M, B
+  interface: string; // e.g. PCIe, SATA
+  pcieVersion: string; // optional, empty when interface is SATA
+  readSpeed: number;
+  writeSpeed: number;
+}
+
+export interface SataStorageSchema {
+  id: number;
+  brand: string;
+  name: string;
+  price: number;
+  capacity: number;
+  formFactor: string; // 2.5", 3.5"
   readSpeed: number;
   writeSpeed: number;
 }
@@ -104,6 +117,7 @@ export interface MoboSchema {
   formFactor: string;
   ramSlots: number;
   ramType: string;
+  // TODO add MoboM2SlotSchema w/ boolean fields for each supported M.2 module length, PCIe version, PCIe lanes, M.2 key type (M, B)
   m2Slots: number;
   usb40Ports: number;
   usb20Ports: number;
@@ -126,9 +140,11 @@ export interface MoboSchema {
   pcie3x4Slots: number;
   pcie3x2Slots: number;
   pcie3x1Slots: number;
-  // TODO add sataPorts, sataGigabitRate
+  sata6GbpsPorts: number;
 }
 
+// TODO split CoolerSchema into separate schemas for each type
+// maxCounts() can then be based on e.g. assigned M.2 SSDs or RAM sticks
 export interface CoolerSchema {
   id: number;
   brand: string;
@@ -142,7 +158,8 @@ export interface CoolerSchema {
   size: string;
   fanDiameter: number;
   coolingWatts: number;
-  // TODO Socket compatibility (including multiple), fan count, noise level
+  compatibility: Array<string>;
+  // TODO fan count, noise level
   // TODO split size into separate dimensions
 }
 
@@ -153,7 +170,8 @@ export type Schema<T extends StoreName> = {
   cpu: CpuSchema;
   gpu: GpuSchema;
   ram: RamSchema;
-  storage: StorageSchema;
+  m2Storage: M2StorageSchema;
+  sataStorage: SataStorageSchema;
   psu: PsuSchema;
   mobo: MoboSchema;
   cooler: CoolerSchema;
@@ -245,6 +263,34 @@ export class BrowserDatabase extends Dexie {
             delete mobo.pcieVersion;
           });
       });
+    this.version(6).stores({
+      // add compatibility
+      cooler:
+        "++id, brand, name, price, type, size, fanDiameter, coolingWatts, compatibility",
+    });
+    this.version(7)
+      .stores({
+        // add sata6GbpsPorts
+        mobo: "++id, brand, name, price, socket, formFactor, ramSlots, ramType, m2Slots, usb40Ports, usb20Ports, usb10Ports, usb5Ports, usbSlowPorts, ethernetGigabitRate, pcie5x16Slots, pcie5x8Slots, pcie5x4Slots, pcie5x2Slots, pcie5x1Slots, pcie4x16Slots, pcie4x8Slots, pcie4x4Slots, pcie4x2Slots, pcie4x1Slots, pcie3x16Slots, pcie3x8Slots, pcie3x4Slots, pcie3x2Slots, pcie3x1Slots, sata6GbpsPorts",
+      })
+      .upgrade(async (tx) => {
+        // At the time of this upgrade only the motherboard table actually has any data in it
+        return tx
+          .table<MoboSchema>("mobo")
+          .toCollection()
+          .modify((mobo) => {
+            mobo.sata6GbpsPorts = 0;
+          });
+      });
+    this.version(8).stores({
+      // remove storage schema
+      storage: null,
+      // add m2Storage, sataStorage schemas
+      m2Storage:
+        "++id, brand, name, price, capacity, moduleCode, moduleKey, interface, pcieVersion, readSpeed, writeSpeed",
+      sataStorage:
+        "++id, brand, name, price, capacity, formFactor, readSpeed, writeSpeed",
+    });
   }
 }
 

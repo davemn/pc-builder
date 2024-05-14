@@ -8,8 +8,10 @@ import { BuildGroupContext, BuildGroupProvider } from "context/buildGroup";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
+  Compatibility,
   ExtendedBuildSchema,
   OrderedBuildComponentStoreNames,
+  overallCompatibility,
 } from "lib/build";
 import { EdgeSchema, Schema, db } from "lib/db";
 import { EditBuildPageProps } from "lib/page";
@@ -45,12 +47,15 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
     onClick,
   } = props;
 
-  const { singularName, getIsBuildCompatible, getMaxCount } =
+  const { singularName, getCompatibilityChecks, getMaxCount } =
     BuildComponentMeta[componentType];
   const assignedSlots = build.components[componentType];
-  const hasIncompatibleSlots = assignedSlots.some(
-    (component) => !getIsBuildCompatible(component, build)
-  );
+  const hasIncompatibleSlots =
+    overallCompatibility(
+      assignedSlots.flatMap((component) =>
+        getCompatibilityChecks(component, build)
+      )
+    ) === Compatibility.INCOMPATIBLE;
   const maxSlots = getMaxCount(build);
 
   const getButtonVariant = (
@@ -62,7 +67,9 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
       selectedEdgeId === (component?.edgeId ?? null);
 
     const isCompatible =
-      slotIndex < maxSlots && getIsBuildCompatible(component, build);
+      slotIndex < maxSlots &&
+      overallCompatibility(getCompatibilityChecks(component, build)) !==
+        Compatibility.INCOMPATIBLE;
 
     if (!isCompatible) {
       return isSelected

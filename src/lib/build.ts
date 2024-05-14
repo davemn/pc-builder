@@ -6,7 +6,8 @@ import {
   MoboColumns,
   PsuColumns,
   RamColumns,
-  StorageColumns,
+  M2StorageColumns,
+  SataStorageColumns,
 } from "lib/columns";
 import {
   BuildGroupSchema,
@@ -47,6 +48,12 @@ export type ExtendedBuildGroupSchema = BuildGroupSchema & {
   builds: Array<BuildSchema>;
 };
 
+export enum Compatibility {
+  COMPATIBLE,
+  INCOMPATIBLE,
+  UNKNOWN,
+}
+
 // Be careful when adding new component types, the Typescript compiler doesn't enforce
 // that every store name is included in this array
 export const OrderedBuildComponentStoreNames: Array<BuildComponentStoreName> = [
@@ -54,7 +61,8 @@ export const OrderedBuildComponentStoreNames: Array<BuildComponentStoreName> = [
   "gpu",
   "mobo",
   "ram",
-  "storage",
+  "m2Storage",
+  "sataStorage",
   "psu",
   "cooler",
 ];
@@ -63,10 +71,13 @@ export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
   singularName: string;
   pluralName: string;
   columns: Array<ColumnDefinition<T>>;
-  getIsBuildCompatible: (
+  getCompatibilityChecks: (
     component: Schema<T>,
     build: ExtendedBuildSchema
-  ) => boolean;
+  ) => Array<{
+    componentType: BuildComponentStoreName;
+    compatibility: Compatibility;
+  }>;
   getMaxCount: (build: ExtendedBuildSchema) => number;
 }
 
@@ -88,25 +99,26 @@ function columnStringEquals(colA: string, colB: string) {
   );
 }
 
-function buildRequiredPower(
-  build: ExtendedBuildSchema,
-  excludeComponent?: BuildComponentStoreName
+function columnArrayIncludes(colA: string[], colB: string) {
+  return colA.some((col) => columnStringEquals(col, colB));
+}
+
+export function overallCompatibility(
+  compatChecks: Array<{ compatibility: Compatibility }>
 ) {
-  let baseWatts = 0,
-    peakWatts = 0;
-
-  if (excludeComponent !== "cpu") {
-    baseWatts += build.components["cpu"][0]?.tdp ?? 0;
+  if (
+    compatChecks.some(
+      (check) => check.compatibility === Compatibility.INCOMPATIBLE
+    )
+  ) {
+    return Compatibility.INCOMPATIBLE;
   }
-  if (excludeComponent !== "gpu") {
-    baseWatts += build.components["gpu"][0]?.wattage ?? 0;
+  if (
+    compatChecks.some((check) => check.compatibility === Compatibility.UNKNOWN)
+  ) {
+    return Compatibility.UNKNOWN;
   }
-  // TODO cpu & ram. Power specs for those aren't usually listed though...
-
-  // TODO calculate expected peak wattage
-  peakWatts = baseWatts;
-
-  return { baseWatts, peakWatts };
+  return Compatibility.COMPATIBLE;
 }
 
 export const BuildComponentMeta: BuildComponentRecord = {
@@ -114,41 +126,29 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "CPU",
     pluralName: "CPUs",
     columns: CpuColumns,
-    getIsBuildCompatible: (cpu, build) => {
+    getCompatibilityChecks: (cpu, build) => {
+      const compatChecks = [];
+
       // (1) Check if CPU socket matches motherboard socket
       const [mobo] = build.components.mobo;
-      if (mobo && cpu.socket && !columnStringEquals(mobo.socket, cpu.socket)) {
-        return false;
+      if (!mobo || !mobo.socket || !cpu.socket) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.UNKNOWN,
+        });
+      } else if (!columnStringEquals(mobo.socket, cpu.socket)) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      } else {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.COMPATIBLE,
+        });
       }
 
-      // (2) Check if CPU TDP is within cooler's cooling capacity
-      const cpuCooler = build.components.cooler.find(
-        (cooler) => cooler.type === "cpu"
-      );
-      // TODO warning if cooler is above but too close to CPU's TDP, for overclocking headroom
-      // Might need more fields on CpuSchema (boostTdp?)
-      if (
-        cpuCooler &&
-        cpu.tdp > 0 &&
-        cpuCooler.coolingWatts > 0 && // TODO how to surface a partially specified component as having unknown compatibility?
-        cpuCooler.coolingWatts < cpu.tdp
-      ) {
-        return false;
-      }
-
-      // (3) Check if PSU wattage is sufficient
-      const { baseWatts } = buildRequiredPower(build, "cpu");
-      const [assignedPsu] = build.components.psu;
-
-      if (
-        assignedPsu &&
-        cpu.tdp > 0 &&
-        assignedPsu.sustainedWattage < baseWatts + cpu.tdp
-      ) {
-        return false;
-      }
-
-      return true;
+      return compatChecks;
     },
     getMaxCount: () => 1, // TODO multi-cpu builds
   },
@@ -157,30 +157,31 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "GPU",
     pluralName: "GPUs",
     columns: GpuColumns,
-    getIsBuildCompatible: (gpu, build) => {
+    getCompatibilityChecks: (gpu, build) => {
+      const compatChecks = [];
+
       // (1) Check if motherboard has at least one PCIe x16 slot
-      if (BuildComponentMeta.gpu.getMaxCount(build) === 0) {
-        return false;
+      const [mobo] = build.components.mobo;
+      if (!mobo) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.UNKNOWN,
+        });
+      } else if (BuildComponentMeta.gpu.getMaxCount(build) === 0) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      } else {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.COMPATIBLE,
+        });
       }
 
-      // (2) Check if PSU wattage is sufficient
-      // TODO how to check if PSU wattage is sufficient for multiple GPUs? Passing GPU here
-      // gives a power requirement for the current build w/ zero GPUs instead of e.g. 1 of 2.
-      const { baseWatts } = buildRequiredPower(build, "gpu");
-      const [psu] = build.components.psu;
+      // TODO check if GPU length fits in case (needs Case schema)
 
-      if (
-        psu &&
-        gpu.wattage > 0 &&
-        psu.sustainedWattage < baseWatts + gpu.wattage
-      ) {
-        return false;
-      }
-
-      // (3) TODO check if PSU connectors are sufficient (needs schema updates)
-      // (4) TODO check if GPU length fits in case (needs schema updates)
-
-      return true;
+      return compatChecks;
     },
     getMaxCount: (build) => {
       const [mobo] = build.components.mobo;
@@ -199,8 +200,29 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "RAM",
     pluralName: "RAM",
     columns: RamColumns,
-    getIsBuildCompatible: (component) => {
-      return true;
+    getCompatibilityChecks: (ram, build) => {
+      const compatChecks = [];
+
+      const [mobo] = build.components.mobo;
+      if (!mobo || !mobo.ramSlots || !mobo.ramType) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.UNKNOWN,
+        });
+      } else if (BuildComponentMeta.ram.getMaxCount(build) === 0) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      } else if (!columnStringEquals(mobo.ramType, ram.type)) {
+        // DDR versions aren't backwards- or forwards-compatible
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      }
+
+      return compatChecks;
     },
     getMaxCount: (build) => {
       const [mobo] = build.components.mobo;
@@ -212,12 +234,32 @@ export const BuildComponentMeta: BuildComponentRecord = {
       return mobo.ramSlots;
     },
   },
-  storage: {
-    singularName: "SSD",
-    pluralName: "SSDs",
-    columns: StorageColumns,
-    getIsBuildCompatible: (component) => {
-      return true;
+  m2Storage: {
+    singularName: "M.2 SSD",
+    pluralName: "M.2 SSDs",
+    columns: M2StorageColumns,
+    getCompatibilityChecks: (m2Drive, build) => {
+      const compatChecks = [];
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.UNKNOWN,
+        });
+      } else if (BuildComponentMeta.m2Storage.getMaxCount(build) === 0) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      } else {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.COMPATIBLE,
+        });
+      }
+
+      return compatChecks;
     },
     getMaxCount: (build) => {
       const [mobo] = build.components.mobo;
@@ -229,21 +271,50 @@ export const BuildComponentMeta: BuildComponentRecord = {
       return mobo.m2Slots;
     },
   },
+  sataStorage: {
+    singularName: "SATA SSD",
+    pluralName: "SATA SSDs",
+    columns: SataStorageColumns,
+    getCompatibilityChecks: (sataDrive, build) => {
+      const compatChecks = [];
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.UNKNOWN,
+        });
+      } else if (BuildComponentMeta.sataStorage.getMaxCount(build) === 0) {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.INCOMPATIBLE,
+        });
+      } else {
+        compatChecks.push({
+          componentType: "mobo" as const,
+          compatibility: Compatibility.COMPATIBLE,
+        });
+      }
+
+      return compatChecks;
+    },
+    getMaxCount: (build) => {
+      const [mobo] = build.components.mobo;
+
+      if (!mobo) {
+        return -1;
+      }
+
+      return mobo.sata6GbpsPorts;
+    },
+  },
   psu: {
     singularName: "Power Supply",
     pluralName: "Power Supplies",
     columns: PsuColumns,
-    getIsBuildCompatible: (psu, build) => {
-      const { baseWatts, peakWatts } = buildRequiredPower(build);
-
-      if (psu.sustainedWattage > 0 && psu.sustainedWattage < baseWatts) {
-        return false;
-      }
-      if (psu.peakWattage > 0 && psu.peakWattage < peakWatts) {
-        return false;
-      }
-
-      return true;
+    getCompatibilityChecks: (psu, build) => {
+      // TODO Check if PSU has enough & correct connectors for GPU(s), SATA SSDs, mobo, coolers, etc.
+      return [];
     },
     getMaxCount: () => 1,
   },
@@ -251,18 +322,9 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Motherboard",
     pluralName: "Motherboards",
     columns: MoboColumns,
-    getIsBuildCompatible: (mobo, build) => {
-      const [cpu] = build.components.cpu;
-      if (
-        cpu &&
-        cpu.socket &&
-        mobo.socket &&
-        !columnStringEquals(mobo.socket, cpu.socket)
-      ) {
-        return false;
-      }
-
-      return true;
+    getCompatibilityChecks: (mobo, build) => {
+      // TODO check case compatibility once CaseSchema has been added
+      return [];
     },
     getMaxCount: () => 1,
   },
@@ -270,25 +332,124 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Cooler",
     pluralName: "Coolers",
     columns: CoolerColumns,
-    getIsBuildCompatible: (cooler, build) => {
+    getCompatibilityChecks: (cooler, build) => {
+      const compatChecks = [];
+
       switch (cooler.type) {
         case "cpu": {
           const cpu = build.components.cpu[0];
-          if (
-            cpu &&
-            cpu.tdp > 0 &&
-            cooler.coolingWatts > 0 &&
-            cooler.coolingWatts < cpu.tdp
-          ) {
-            return false;
+
+          // Check if CPU socket matches cooler compatibility list
+          let socketCompatibility: Compatibility;
+
+          if (!cpu || !cpu.socket || cooler.compatibility.length === 0) {
+            socketCompatibility = Compatibility.UNKNOWN;
+          } else if (!columnArrayIncludes(cooler.compatibility, cpu.socket)) {
+            socketCompatibility = Compatibility.INCOMPATIBLE;
+          } else {
+            socketCompatibility = Compatibility.COMPATIBLE;
           }
+
+          // Check if CPU TDP is within cooler's cooling capacity
+          let coolerCompatibility: Compatibility;
+          if (!cpu || !cpu.tdp || !cooler.coolingWatts) {
+            coolerCompatibility = Compatibility.UNKNOWN;
+          } else if (cooler.coolingWatts < cpu.tdp) {
+            coolerCompatibility = Compatibility.INCOMPATIBLE;
+          } else {
+            coolerCompatibility = Compatibility.COMPATIBLE;
+          }
+
+          const socketAndCoolerCompatibility = overallCompatibility([
+            { compatibility: socketCompatibility },
+            { compatibility: coolerCompatibility },
+          ]);
+
+          compatChecks.push({
+            componentType: "cpu" as const,
+            compatibility: socketAndCoolerCompatibility,
+          });
+
           break;
         }
         default:
+        // TODO other cooler types: GPU, RAM, M.2 SSD, case fans
       }
 
-      return true;
+      return compatChecks;
     },
     getMaxCount: () => -1,
   },
 };
+
+export function buildPowerSummary(build: ExtendedBuildSchema) {
+  // Calculate consumption
+  let baseWattsNeeded = 0,
+    peakWattsNeeded = 0;
+
+  baseWattsNeeded += build.components["cpu"][0]?.tdp ?? 0;
+  baseWattsNeeded += build.components["gpu"][0]?.wattage ?? 0;
+  // TODO cpu & ram. Power specs for those aren't usually listed though...
+
+  // TODO calculate expected peak wattage (based on boost clock, etc.)
+  peakWattsNeeded = baseWattsNeeded;
+
+  // Calculate capacity
+  const [assignedPsu] = build.components.psu;
+
+  let baseWattsProvided = 0,
+    peakWattsProvided = 0;
+
+  if (assignedPsu) {
+    baseWattsProvided = assignedPsu.sustainedWattage;
+    peakWattsProvided = assignedPsu.peakWattage || baseWattsProvided;
+  }
+
+  return {
+    baseCapacity: baseWattsProvided,
+    peakCapacity: peakWattsProvided,
+    expectedBaseConsumption: baseWattsNeeded,
+    expectedPeakConsumption: peakWattsNeeded,
+  };
+}
+
+export function buildCoolingSummary(build: ExtendedBuildSchema) {
+  const cpuCooler = build.components.cooler.find(
+    (cooler) => cooler.type === "cpu"
+  );
+
+  const gpuCooler = build.components.cooler.find(
+    (cooler) => cooler.type === "gpu"
+  );
+
+  // Calculate consumption
+  let baseCoolingNeeded = 0;
+
+  // if they haven't added a custom CPU cooler to the build, assume that they're using the stock cooler
+  // and it doesn't need to be factored into the cooling capacity
+  if (cpuCooler) {
+    baseCoolingNeeded += build.components["cpu"][0]?.tdp ?? 0;
+    // TODO warning if cooler is above but too close to CPU's TDP, for overclocking headroom
+    // Might need more fields on CpuSchema (boostTdp?)
+  }
+  // ... same for GPU cooler
+  if (gpuCooler) {
+    baseCoolingNeeded += build.components["gpu"].reduce(
+      (acc, gpu) => acc + (gpu.tdp || gpu.wattage),
+      0
+    );
+  }
+
+  // Calculate capacity
+  let baseCoolingProvided = 0;
+
+  baseCoolingProvided += cpuCooler?.coolingWatts ?? 0;
+  baseCoolingProvided += gpuCooler?.coolingWatts ?? 0;
+
+  return {
+    baseCapacity: baseCoolingProvided,
+    expectedBaseConsumption: baseCoolingNeeded,
+  };
+}
+
+// TODO function to generate list of build optimizations, like matching RAM speed to mobo, matching PCIe versions, etc.

@@ -109,7 +109,7 @@ export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
   { label: "Price", name: "price", unit: Unit.DOLLARS },
   { label: "VRAM", name: "vram", unit: Unit.GIGABYTES },
   { label: "Wattage", name: "wattage", unit: Unit.WATTS },
-  { label: "TDP", name: "tdp", unit: Unit.WATTS },
+  { label: "TDP", name: "tdp", unit: Unit.COOLING_WATTS },
   { label: "HDMI Outputs", name: "hdmiOutputs", unit: Unit.COUNT },
   {
     label: "DisplayPort Outputs",
@@ -127,13 +127,25 @@ export const RamColumns: Array<ColumnDefinition<"ram">> = [
   { label: "Type", name: "type", unit: Unit.NONE },
 ];
 
-export const StorageColumns: Array<ColumnDefinition<"storage">> = [
+export const M2StorageColumns: Array<ColumnDefinition<"m2Storage">> = [
+  { label: "Name", name: "name", unit: Unit.NONE },
+  { label: "Brand", name: "brand", unit: Unit.NONE },
+  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Capacity", name: "capacity", unit: Unit.TERABYTES },
+  { label: "Module Code", name: "moduleCode", unit: Unit.NONE },
+  { label: "Key (M, B)", name: "moduleKey", unit: Unit.NONE },
+  { label: "Interface (PCIe, SATA)", name: "interface", unit: Unit.NONE },
+  { label: "PCIe Version", name: "pcieVersion", unit: Unit.NONE },
+  { label: "Read Speed", name: "readSpeed", unit: Unit.MEGABYTES_PER_SECOND },
+  { label: "Write Speed", name: "writeSpeed", unit: Unit.MEGABYTES_PER_SECOND },
+];
+
+export const SataStorageColumns: Array<ColumnDefinition<"sataStorage">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
   { label: "Price", name: "price", unit: Unit.DOLLARS },
   { label: "Capacity", name: "capacity", unit: Unit.TERABYTES },
   { label: "Form Factor", name: "formFactor", unit: Unit.NONE },
-  { label: "Interface", name: "interface", unit: Unit.NONE },
   { label: "Read Speed", name: "readSpeed", unit: Unit.MEGABYTES_PER_SECOND },
   { label: "Write Speed", name: "writeSpeed", unit: Unit.MEGABYTES_PER_SECOND },
 ];
@@ -177,7 +189,8 @@ export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
   { label: "PCIe 4.0 x1 Slots", name: "pcie4x1Slots", unit: Unit.COUNT },
   { label: "PCIe 3.0 x1 Slots", name: "pcie3x1Slots", unit: Unit.COUNT },
 
-  { label: "M.2 Slots", name: "m2Slots", unit: Unit.COUNT },
+  { label: "M.2 Sockets", name: "m2Slots", unit: Unit.COUNT },
+  { label: "SATA 6.0 Gbps Ports", name: "sata6GbpsPorts", unit: Unit.COUNT },
 
   { label: "USB 40 GBps Slots", name: "usb40Ports", unit: Unit.COUNT },
   { label: "USB 20 GBps Slots", name: "usb20Ports", unit: Unit.COUNT },
