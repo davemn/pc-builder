@@ -21,6 +21,7 @@ export enum ButtonSize {
 type ButtonProps = {
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
   size?: ButtonSize;
   variant?: ButtonVariant;
 } & (
@@ -38,6 +39,7 @@ export const Button = (props: ButtonProps) => {
   const {
     children,
     className: classNameProp,
+    disabled = false,
     onClick,
     size = ButtonSize.NORMAL,
     type = "button",
@@ -59,6 +61,7 @@ export const Button = (props: ButtonProps) => {
         variant === ButtonVariant.NEGATIVE && "variantNegative",
         variant === ButtonVariant.NEGATIVE_ACTIVE && "variantNegativeActive"
       )} ${classNameProp ?? ""}`}
+      disabled={disabled}
       onClick={onClick}
       type={type}
     >

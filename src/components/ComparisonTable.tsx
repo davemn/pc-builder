@@ -1,12 +1,18 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
 import { Modal } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
-import { BuildComponentStoreName, ExtendedBuildSchema } from "lib/build";
+import {
+  BuildComponentMeta,
+  BuildComponentStoreName,
+  Compatibility,
+  ExtendedBuildSchema,
+  overallCompatibility,
+} from "lib/build";
 import { ColumnDefinition } from "lib/columns";
 import { db, Schema } from "lib/db";
 import { cx, makeClassNamePrimitives } from "lib/styles";
@@ -18,9 +24,6 @@ const { Div, Span } = makeClassNamePrimitives(classNames);
 
 export interface ComparisonTableProps<T extends BuildComponentStoreName> {
   dataStoreName: T;
-  dataStoreLabel: string;
-  columns: Array<ColumnDefinition<T>>;
-  getIsBuildCompatible: (row: Schema<T>, build: ExtendedBuildSchema) => boolean;
   onEditSelected: (previousRow: Schema<T>, row: Schema<T>) => void;
   onRemove: (row: Schema<T>) => void;
   onSelect: (previousRow: Schema<T> | null, row: Schema<T>) => void;
@@ -63,7 +66,7 @@ function sortByMultiple<T>(
 }
 
 interface TableRowProps<T extends BuildComponentStoreName> {
-  columns: ComparisonTableProps<T>["columns"];
+  columns: Array<ColumnDefinition<T>>;
   compareToRow?: Schema<T>;
   onEdit: (id: number) => void;
   onRemove?: (id: number) => void;
@@ -98,6 +101,7 @@ const TableRow = <T extends BuildComponentStoreName>(
     switch (column.unit.dataType) {
       case "numeric":
         if (typeof value !== "number") {
+          debugger;
           console.warn(
             `Expected numeric value for column "${column.name}", got ${JSON.stringify(value)}`
           );
@@ -192,14 +196,20 @@ const TableRow = <T extends BuildComponentStoreName>(
   );
 };
 
+interface RowState<T extends BuildComponentStoreName> {
+  allRows: Array<Schema<T>>;
+  columns: Array<ColumnDefinition<T>>;
+  selectedRow: Schema<T> | undefined;
+  selectedRowIsCompatible: boolean;
+  unselectedRows: Array<Schema<T>>;
+  incompatibleRows: Array<Schema<T>>;
+}
+
 export const ComparisonTable = <T extends BuildComponentStoreName>(
   props: ComparisonTableProps<T>
 ) => {
   const {
     dataStoreName,
-    dataStoreLabel,
-    columns,
-    getIsBuildCompatible,
     onEditSelected,
     onRemove,
     onSelect,
@@ -216,37 +226,77 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editRow, setEditRow] = useState<Schema<T>>();
   const [isEditingSelectedRow, setIsEditingSelectedRow] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const allRows = useLiveQuery<Array<Schema<T>>, Array<never>>(
+  const dataStoreLabel = BuildComponentMeta[dataStoreName].pluralName;
+
+  // Tie all of this state to the data query so the table can be reactive to dataStoreName updates
+  // without e.g. columns changing before new rows have been fetched
+  const {
+    allRows,
+    columns,
+    selectedRow,
+    selectedRowIsCompatible,
+    unselectedRows,
+    incompatibleRows,
+  } = useLiveQuery<RowState<T>, RowState<T>>(
     async () => {
-      // Dexie doesn't support multi-column sorting
+      const componentMeta = BuildComponentMeta[dataStoreName];
+
+      const getIsBuildCompatible = (
+        row: Schema<T>,
+        build: ExtendedBuildSchema
+      ) => {
+        return (
+          overallCompatibility(
+            componentMeta.getCompatibilityChecks(row, build)
+          ) !== Compatibility.INCOMPATIBLE
+        );
+      };
+
+      const columns = componentMeta.columns;
       const rows = await db.table(dataStoreName).toArray();
-      return sortByMultiple(rows, sortBy);
-    },
-    [dataStoreName, sortBy],
-    []
-  );
+      // Dexie doesn't support multi-column sorting
+      const allRows = sortByMultiple(rows, sortBy);
 
-  const [selectedRow, unselectedRows, incompatibleRows] = useMemo(() => {
-    let selectedRow: Schema<T> | undefined,
-      unselectedRows: Array<Schema<T>> = [],
-      incompatibleRows: Array<Schema<T>> = [];
+      let selectedRow: Schema<T> | undefined,
+        unselectedRows: Array<Schema<T>> = [],
+        incompatibleRows: Array<Schema<T>> = [];
 
-    for (const row of allRows) {
-      if (row.id === selectedRowId) {
-        selectedRow = row;
-      } else if (!build || getIsBuildCompatible(row, build)) {
-        unselectedRows.push(row);
-      } else {
-        incompatibleRows.push(row);
+      for (const row of allRows) {
+        if (row.id === selectedRowId) {
+          selectedRow = row;
+        } else if (!build || getIsBuildCompatible(row, build)) {
+          unselectedRows.push(row);
+        } else {
+          incompatibleRows.push(row);
+        }
       }
+
+      const selectedRowIsCompatible =
+        selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
+
+      setIsLoading(false);
+
+      return {
+        allRows,
+        columns,
+        selectedRow,
+        selectedRowIsCompatible,
+        unselectedRows,
+        incompatibleRows,
+      };
+    },
+    [dataStoreName, sortBy, selectedRowId, build],
+    {
+      allRows: [],
+      columns: [],
+      selectedRow: undefined,
+      selectedRowIsCompatible: true,
+      unselectedRows: [],
+      incompatibleRows: [],
     }
-
-    return [selectedRow, unselectedRows, incompatibleRows];
-  }, [selectedRowId, allRows, getIsBuildCompatible, build]);
-
-  // TODO combine useLiveQuery and useMemo (return the memo value from useLiveQuery)
-  // Otherwise the row state is stale when the table is re-rendered when dataStoreName changes
+  );
 
   const handleEdit = (row: Schema<T>, editingSelected = false) => {
     setEditModalOpen(true);
@@ -256,8 +306,22 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     }
   };
 
-  const selectedRowIsCompatible =
-    selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
+  useEffect(() => {
+    setIsLoading(true);
+  }, [dataStoreName]);
+
+  if (isLoading) {
+    return (
+      <Div.Container>
+        <Div.TableName>
+          <h2>{dataStoreLabel}</h2>
+          <Button disabled onClick={() => {}} variant={ButtonVariant.ACCENT}>
+            Add
+          </Button>
+        </Div.TableName>
+      </Div.Container>
+    );
+  }
 
   return (
     <Div.Container>

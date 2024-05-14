@@ -34,25 +34,6 @@ type Distribute<T> = T extends BuildComponentStoreName
 
 type AnyComparisonTableProps = Distribute<BuildComponentStoreName>;
 
-function getTableProps<T extends BuildComponentStoreName>(
-  componentType: T
-): Omit<ComparisonTableProps<T>, "onEditSelected" | "onRemove" | "onSelect"> {
-  const componentMeta = BuildComponentMeta[componentType];
-
-  return {
-    dataStoreName: componentType,
-    dataStoreLabel: componentMeta.pluralName,
-    columns: componentMeta.columns,
-    getIsBuildCompatible: (component, build) => {
-      return (
-        overallCompatibility(
-          componentMeta.getCompatibilityChecks(component, build)
-        ) !== Compatibility.INCOMPATIBLE
-      );
-    },
-  };
-}
-
 export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
   const { componentType, edgeId, onRemove, onSelect, showOutOfBoundsWarning } =
     props;
@@ -73,7 +54,7 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
         </Div.WarningBanner>
       )}
       <ComparisonTable
-        {...getTableProps(componentType)}
+        dataStoreName={componentType}
         onEditSelected={async (prevComponent, component) => {
           // update build price
           await db.transaction("rw", ["build"], async (tx) => {
