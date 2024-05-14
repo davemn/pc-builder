@@ -204,7 +204,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
       const compatChecks = [];
 
       const [mobo] = build.components.mobo;
-      if (!mobo || !mobo.ramSlots || !mobo.ramType) {
+      if (!mobo || !mobo.ramSlots || !mobo.ramType || !ram.type) {
         compatChecks.push({
           componentType: "mobo" as const,
           compatibility: Compatibility.UNKNOWN,

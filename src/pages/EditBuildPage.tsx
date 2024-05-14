@@ -67,7 +67,7 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
       selectedEdgeId === (component?.edgeId ?? null);
 
     const isCompatible =
-      slotIndex < maxSlots &&
+      (maxSlots === -1 || slotIndex < maxSlots) &&
       overallCompatibility(getCompatibilityChecks(component, build)) !==
         Compatibility.INCOMPATIBLE;
 
