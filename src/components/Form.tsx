@@ -12,7 +12,7 @@ interface FormProps {
   onCancel?: () => void;
   onSubmit: (data: Record<string, any>) => void;
   schema: Array<{
-    type: "text" | "numeric";
+    dataType: "text" | "numeric" | "currency";
     label: string;
     name: string;
     // multiple?: boolean;
@@ -82,13 +82,15 @@ export const Form = (props: FormProps) => {
     return Object.fromEntries(
       schema.map((field) => {
         const defaultFieldValue: string | number =
-          field.type === "numeric" ? 0 : "";
+          field.dataType === "numeric" || field.dataType === "currency"
+            ? 0
+            : "";
 
         let fieldValue = defaultFieldValue;
 
         if (initialData) {
           const rawFieldValue = initialData[field.name];
-          if (field.type === "numeric") {
+          if (field.dataType === "numeric" || field.dataType === "currency") {
             fieldValue = parseFloat(rawFieldValue as string);
           } else {
             fieldValue = `${rawFieldValue}`;
@@ -117,7 +119,7 @@ export const Form = (props: FormProps) => {
       onSubmit={handleSubmit}
     >
       {schema.map((field) => {
-        if (field.type === "text") {
+        if (field.dataType === "text") {
           return (
             <div key={field.name} className={classNames.fieldContainer}>
               <label>{field.label}</label>
@@ -135,7 +137,10 @@ export const Form = (props: FormProps) => {
               />
             </div>
           );
-        } else if (field.type === "numeric") {
+        } else if (
+          field.dataType === "numeric" ||
+          field.dataType === "currency"
+        ) {
           return (
             <div key={field.name} className={classNames.fieldContainer}>
               <label>{field.label}</label>

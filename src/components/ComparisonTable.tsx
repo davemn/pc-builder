@@ -1,3 +1,4 @@
+import { SyncIcon } from "@primer/octicons-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useContext, useEffect, useState } from "react";
 
@@ -100,8 +101,8 @@ const TableRow = <T extends BuildComponentStoreName>(
 
     switch (column.unit.dataType) {
       case "numeric":
+      case "currency":
         if (typeof value !== "number") {
-          debugger;
           console.warn(
             `Expected numeric value for column "${column.name}", got ${JSON.stringify(value)}`
           );
@@ -125,6 +126,7 @@ const TableRow = <T extends BuildComponentStoreName>(
 
     switch (column.unit.dataType) {
       case "numeric":
+      case "currency":
         if (typeof value !== "number" || typeof compareToValue !== "number") {
           console.warn(
             `Expected numeric value for column "${column.name}", got ${JSON.stringify(
@@ -151,21 +153,49 @@ const TableRow = <T extends BuildComponentStoreName>(
     return <Span.CellValueNeutral>{valueText}</Span.CellValueNeutral>;
   };
 
+  const renderCell = (column: ColumnDefinition<T>) => {
+    const cellStyle = {
+      ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
+    };
+
+    switch (column.name) {
+      case "name":
+        return (
+          <Div.Cell key={`${row.id}-${column.name}`} style={cellStyle}>
+            {renderCellValue(column)}
+          </Div.Cell>
+        );
+      case "price":
+        return (
+          <Div.Cell
+            key={`${row.id}-${column.name}`}
+            style={{
+              ...cellStyle,
+              gap: "4px",
+            }}
+          >
+            <Span.CellName>{column.label}</Span.CellName>
+            <button className={classNames.cellPriceRefreshButton}>
+              {renderCellValue(column)}
+              <SyncIcon size="small" />
+            </button>
+            <Div.CellStoreName>B&H Photo Video</Div.CellStoreName>
+            <Div.CellLastUpdate>1 week ago</Div.CellLastUpdate>
+          </Div.Cell>
+        );
+      default:
+        return (
+          <Div.Cell key={`${row.id}-${column.name}`} style={cellStyle}>
+            <Span.CellName>{column.label}</Span.CellName>
+            {renderCellValue(column)}
+          </Div.Cell>
+        );
+    }
+  };
+
   return (
     <>
-      {columns.map((column, columnI) => (
-        <Div.Cell
-          key={`${row.id}-${column.name}`}
-          style={{
-            ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
-          }}
-        >
-          {column.name !== "name" && (
-            <Span.CellName>{column.label}</Span.CellName>
-          )}
-          {renderCellValue(column)}
-        </Div.Cell>
-      ))}
+      {columns.map(renderCell)}
       <Div.ActionCell
         key={`${row.id}-actions}`}
         style={{
@@ -459,7 +489,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           <h2 className={classNames.modalTitle}>Add</h2>
           <Form
             schema={columns.map((column) => ({
-              type: column.unit.dataType,
+              dataType: column.unit.dataType,
               name: column.name,
               label: column.label,
             }))}
@@ -487,7 +517,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               editRow as Record<Extract<keyof T, string>, number | string>
             }
             schema={columns.map((column) => ({
-              type: column.unit.dataType,
+              dataType: column.unit.dataType,
               name: column.name,
               label: column.label,
             }))}

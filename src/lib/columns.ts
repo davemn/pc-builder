@@ -8,7 +8,7 @@ const QualityFn = {
 
 export type UnitDefinition =
   | {
-      dataType: "numeric";
+      dataType: "numeric" | "currency";
       format: (value: number) => string;
       compareQuality: (a: number, b: number) => number;
     }
@@ -35,8 +35,8 @@ export const Unit: Record<string, UnitDefinition> = {
     format: (value: number) => `${value} W`,
     compareQuality: QualityFn.MORE_IS_BETTER,
   },
-  DOLLARS: {
-    dataType: "numeric",
+  CURRENCY: {
+    dataType: "currency",
     format: (value: number) => `$${Math.ceil(value)}`,
     compareQuality: QualityFn.LESS_IS_BETTER,
   },
@@ -94,7 +94,7 @@ export const Unit: Record<string, UnitDefinition> = {
 export const CpuColumns: Array<ColumnDefinition<"cpu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Socket", name: "socket", unit: Unit.NONE },
   { label: "Cores", name: "cores", unit: Unit.COUNT },
   { label: "Cache", name: "cache", unit: Unit.MEGABYTES },
@@ -106,7 +106,7 @@ export const CpuColumns: Array<ColumnDefinition<"cpu">> = [
 export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "VRAM", name: "vram", unit: Unit.GIGABYTES },
   { label: "Wattage", name: "wattage", unit: Unit.WATTS },
   { label: "TDP", name: "tdp", unit: Unit.COOLING_WATTS },
@@ -121,7 +121,7 @@ export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
 export const RamColumns: Array<ColumnDefinition<"ram">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Capacity", name: "capacity", unit: Unit.GIGABYTES },
   { label: "Speed", name: "speed", unit: Unit.MEGATRANSFERS_PER_SECOND },
   { label: "Type", name: "type", unit: Unit.NONE },
@@ -130,7 +130,7 @@ export const RamColumns: Array<ColumnDefinition<"ram">> = [
 export const M2StorageColumns: Array<ColumnDefinition<"m2Storage">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Capacity", name: "capacity", unit: Unit.TERABYTES },
   { label: "Module Code", name: "moduleCode", unit: Unit.NONE },
   { label: "Key (M, B)", name: "moduleKey", unit: Unit.NONE },
@@ -143,7 +143,7 @@ export const M2StorageColumns: Array<ColumnDefinition<"m2Storage">> = [
 export const SataStorageColumns: Array<ColumnDefinition<"sataStorage">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Capacity", name: "capacity", unit: Unit.TERABYTES },
   { label: "Form Factor", name: "formFactor", unit: Unit.NONE },
   { label: "Read Speed", name: "readSpeed", unit: Unit.MEGABYTES_PER_SECOND },
@@ -153,7 +153,7 @@ export const SataStorageColumns: Array<ColumnDefinition<"sataStorage">> = [
 export const PsuColumns: Array<ColumnDefinition<"psu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Wattage (Sustained)", name: "sustainedWattage", unit: Unit.WATTS },
   { label: "Wattage (Peak)", name: "peakWattage", unit: Unit.WATTS },
   { label: "ATX Version", name: "atxVersion", unit: Unit.NONE },
@@ -163,7 +163,7 @@ export const PsuColumns: Array<ColumnDefinition<"psu">> = [
 export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Socket", name: "socket", unit: Unit.NONE },
   { label: "Form Factor", name: "formFactor", unit: Unit.NONE },
   { label: "RAM Slots", name: "ramSlots", unit: Unit.COUNT },
@@ -207,7 +207,7 @@ export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
 export const CoolerColumns: Array<ColumnDefinition<"cooler">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
-  { label: "Price", name: "price", unit: Unit.DOLLARS },
+  { label: "Price", name: "price", unit: Unit.CURRENCY },
   { label: "Watts of Cooling", name: "coolingWatts", unit: Unit.COOLING_WATTS },
   { label: "Type", name: "type", unit: Unit.NONE },
   { label: "Size", name: "size", unit: Unit.NONE },

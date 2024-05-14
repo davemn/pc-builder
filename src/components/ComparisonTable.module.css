@@ -73,7 +73,39 @@
 
 .cellName {
   color: var(--light80);
-  font-size: 16px;
+  font-size: var(--fontSizeBody);
+}
+
+.cellPriceRefreshButton {
+  background-color: transparent;
+  border: none;
+  color: var(--light90);
+  font-family: inherit;
+  min-height: auto; /* reset global style */
+  padding: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.cellPriceRefreshButton:hover {
+  cursor: pointer;
+}
+
+.cellPriceRefreshButton:active {
+  color: var(--light100);
+}
+
+.cellStoreName {
+  color: var(--light100);
+  font-size: var(--fontSizeBody);
+}
+
+.cellLastUpdate {
+  color: var(--light80);
+  font-size: var(--fontSizeBody);
 }
 
 .cellValueNeutral {
