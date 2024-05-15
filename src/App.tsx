@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import { useContext, useState } from "react";
 
-import { NavigateProp, PageId, PageProps } from "lib/page";
+import { ModalContext, ModalProvider } from "context/modal";
+import { PageId, PageProps } from "lib/page";
+import { makeClassNamePrimitives } from "lib/styles";
 import { BuildsPage } from "pages/BuildsPage";
 import { EditBuildPage } from "pages/EditBuildPage";
 
 import classNames from "./App.module.css";
+
+const { Div } = makeClassNamePrimitives(classNames);
 
 interface PageState<T extends PageId = PageId> {
   id: T;
@@ -18,7 +22,7 @@ function isPageId<T extends PageId>(
   return state.id === id;
 }
 
-export const App = () => {
+const AppInner = () => {
   const [page, setPage] = useState<PageState>({
     id: "builds",
     props: {},
@@ -40,14 +44,34 @@ export const App = () => {
     }
   };
 
+  const { isModalOpen } = useContext(ModalContext);
+
   return (
-    <div className={classNames.container}>
+    <Div.Container
+      style={{
+        ...(isModalOpen
+          ? {
+              filter: "blur(2px)",
+              overflow: "hidden",
+              pointerEvents: "none",
+            }
+          : {}),
+      }}
+    >
       {isPageId("builds", page) && (
         <BuildsPage navigate={navigate} {...page.props} />
       )}
       {isPageId("editBuild", page) && (
         <EditBuildPage navigate={navigate} {...page.props} />
       )}
-    </div>
+    </Div.Container>
+  );
+};
+
+export const App = () => {
+  return (
+    <ModalProvider>
+      <AppInner />
+    </ModalProvider>
   );
 };

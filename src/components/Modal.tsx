@@ -1,7 +1,12 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { ModalContext } from "context/modal";
+import { makeClassNamePrimitives } from "lib/styles";
+
 import classNames from "./Modal.module.css";
+
+const { Div } = makeClassNamePrimitives(classNames);
 
 interface ModalProps {
   children: React.ReactNode;
@@ -10,18 +15,20 @@ interface ModalProps {
 export const Modal = (props: ModalProps) => {
   const { children } = props;
 
+  const { getModalRootElem, setIsModalOpen } = useContext(ModalContext);
+
   useEffect(() => {
-    // document.body.style.overflow = "hidden";
-    document.body.classList.add("modal-open");
+    setIsModalOpen(true);
 
     return () => {
-      // document.body.style.overflow = "auto";
-      document.body.classList.remove("modal-open");
+      setIsModalOpen(false);
     };
-  }, []);
+  }, [setIsModalOpen]);
 
   return createPortal(
-    <div className={classNames.modal}>{children}</div>,
-    document.getElementById("modal-root")!
+    <Div.ModalOverlay>
+      <Div.Modal>{children}</Div.Modal>
+    </Div.ModalOverlay>,
+    getModalRootElem()!
   );
 };
