@@ -15,8 +15,26 @@
 }
 
 .modal {
-  width: 40vw;
-  margin: auto;
   background-color: var(--dark10);
   padding: 20px;
+}
+
+.variantDefault {
+  width: 40vw;
+  margin: auto;
+}
+
+.variantRightSide {
+  width: 27vw;
+
+  /* align-self: flex-end;
+  margin: -20px;
+  min-height: 100vh;
+  overflow-y: auto; */
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
 }

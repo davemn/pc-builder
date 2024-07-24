@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
-import { Modal } from "components/Modal";
+import { Modal, ModalVariant } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
 import {
@@ -95,6 +95,8 @@ const TableRow = <T extends BuildComponentStoreName>(
     selectButtonVariant = ButtonVariant.DEFAULT,
   } = props;
 
+  const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
+
   const renderCellValue = (column: ColumnDefinition<T>) => {
     const value = row[column.name];
     let valueText: string;
@@ -175,7 +177,10 @@ const TableRow = <T extends BuildComponentStoreName>(
             }}
           >
             <Span.CellName>{column.label}</Span.CellName>
-            <button className={classNames.cellPriceRefreshButton}>
+            <button
+              className={classNames.cellPriceRefreshButton}
+              onClick={() => setPriceHistoryModalOpen(true)}
+            >
               {renderCellValue(column)}
               <SyncIcon size="small" />
             </button>
@@ -222,6 +227,25 @@ const TableRow = <T extends BuildComponentStoreName>(
           </Button>
         )}
       </Div.ActionCell>
+      {priceHistoryModalOpen && (
+        <Modal variant={ModalVariant.RIGHT_SIDE}>
+          <Div.PriceModal>
+            <Div.PriceModalHeadingContainer>
+              <h2 className={classNames.priceModalHeading}>Price History</h2>
+              <Button
+                onClick={() => setPriceHistoryModalOpen(false)}
+                variant={ButtonVariant.DEFAULT}
+              >
+                Close
+              </Button>
+            </Div.PriceModalHeadingContainer>
+            <h1>{row.name}</h1>
+            <Button onClick={() => {}} variant={ButtonVariant.ACCENT}>
+              Add Store Link
+            </Button>
+          </Div.PriceModal>
+        </Modal>
+      )}
     </>
   );
 };

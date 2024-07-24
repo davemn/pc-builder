@@ -139,3 +139,30 @@
   font-size: var(--fontSizeTitle);
   margin-bottom: 20px;
 }
+
+.priceModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.priceModalHeadingContainer {
+  position: relative;
+  /* match button height */
+  /* min-height: 40px;  */
+  text-align: center;
+  width: 100%;
+}
+
+.priceModalHeadingContainer > button {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.priceModalHeading {
+  color: var(--light90);
+  padding: 6px 0;
+  /* min-height: 40px; */
+}
