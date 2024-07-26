@@ -1,4 +1,4 @@
-import Dexie, { Table } from "dexie";
+import { DexieStub } from "./query";
 
 const DATABASE_NAME = "PCBuilder";
 
@@ -17,7 +17,7 @@ export type StoreName =
 
 export interface EdgeSchema<
   T extends StoreName = StoreName,
-  U extends StoreName = StoreName,
+  U extends StoreName = StoreName
 > {
   id: number;
   sourceId: number;
@@ -177,7 +177,7 @@ export type Schema<T extends StoreName> = {
   cooler: CoolerSchema;
 }[T];
 
-export class BrowserDatabase extends Dexie {
+export class BrowserDatabase extends DexieStub {
   constructor() {
     super(DATABASE_NAME);
     this.version(1).stores({

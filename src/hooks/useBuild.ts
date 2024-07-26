@@ -1,5 +1,4 @@
-import { useLiveQuery } from "dexie-react-hooks";
-
+import { useLiveQuery } from "hooks/useLiveQuery";
 import {
   ExtendedBuildSchema,
   OrderedBuildComponentStoreNames,
@@ -42,7 +41,7 @@ export function useBuild(
         );
 
         const componentsOfType = await db
-          .table(componentType)
+          .table<any>(componentType)
           .where(":id")
           .anyOf(uniqueEdgeTargetIds)
           .toArray();

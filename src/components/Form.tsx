@@ -1,7 +1,7 @@
-import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
+import { useLiveQuery } from "hooks/useLiveQuery";
 import { db } from "lib/db";
 
 import classNames from "./Form.module.css";

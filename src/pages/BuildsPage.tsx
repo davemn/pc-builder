@@ -1,8 +1,8 @@
-import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
+import { useLiveQuery } from "hooks/useLiveQuery";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
@@ -67,7 +67,7 @@ async function createOrCopyBuild(
   return await db.transaction("rw", ["edges", "build"], async (tx) => {
     let buildId: number;
     if (buildIdToCopy === undefined) {
-      buildId = await tx.table<Omit<BuildSchema, "id">, number>("build").add({
+      buildId = await tx.table<Omit<BuildSchema, "id">>("build").add({
         name: "New Build",
         price: 0,
       });
@@ -80,7 +80,7 @@ async function createOrCopyBuild(
       }
 
       // copy & rename build
-      buildId = await tx.table<Omit<BuildSchema, "id">, number>("build").add({
+      buildId = await tx.table<Omit<BuildSchema, "id">>("build").add({
         name: `${buildToCopy.name} (Copy)`,
         price: buildToCopy.price,
       });
@@ -287,18 +287,15 @@ const BuildGroup = (props: BuildGroupProps) => {
         })
         .toArray();
 
-      const edgesByType = edges.reduce(
-        (acc, edge) => {
-          if (!acc[edge.targetType]) {
-            acc[edge.targetType] = [];
-          }
+      const edgesByType = edges.reduce((acc, edge) => {
+        if (!acc[edge.targetType]) {
+          acc[edge.targetType] = [];
+        }
 
-          acc[edge.targetType].push(edge);
+        acc[edge.targetType].push(edge);
 
-          return acc;
-        },
-        {} as Record<StoreName, Array<EdgeSchema>>
-      );
+        return acc;
+      }, {} as Record<StoreName, Array<EdgeSchema>>);
 
       const buildComponentsByType: RecordByStoreName = {} as RecordByStoreName;
 
@@ -442,7 +439,7 @@ export const BuildsPage = (props: BuildsPageProps) => {
                 ["edges", "buildGroup"],
                 async (tx) => {
                   const groupId = await tx
-                    .table<Omit<BuildGroupSchema, "id">, number>("buildGroup")
+                    .table<Omit<BuildGroupSchema, "id">>("buildGroup")
                     .add({
                       name: "New Machine",
                     });

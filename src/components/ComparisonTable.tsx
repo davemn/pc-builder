@@ -1,5 +1,4 @@
 import { SyncIcon } from "@primer/octicons-react";
-import { useLiveQuery } from "dexie-react-hooks";
 import React, { useContext, useEffect, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
@@ -7,6 +6,7 @@ import { Form } from "components/Form";
 import { Modal, ModalVariant } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
+import { useLiveQuery } from "hooks/useLiveQuery";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
@@ -106,7 +106,9 @@ const TableRow = <T extends BuildComponentStoreName>(
       case "currency":
         if (typeof value !== "number") {
           console.warn(
-            `Expected numeric value for column "${column.name}", got ${JSON.stringify(value)}`
+            `Expected numeric value for column "${
+              column.name
+            }", got ${JSON.stringify(value)}`
           );
           valueText = `${value}`;
         } else {
@@ -131,9 +133,11 @@ const TableRow = <T extends BuildComponentStoreName>(
       case "currency":
         if (typeof value !== "number" || typeof compareToValue !== "number") {
           console.warn(
-            `Expected numeric value for column "${column.name}", got ${JSON.stringify(
-              value
-            )} and ${JSON.stringify(compareToValue)}`
+            `Expected numeric value for column "${
+              column.name
+            }", got ${JSON.stringify(value)} and ${JSON.stringify(
+              compareToValue
+            )}`
           );
           quality = 0;
         } else {

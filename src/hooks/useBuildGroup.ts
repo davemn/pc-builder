@@ -1,5 +1,4 @@
-import { useLiveQuery } from "dexie-react-hooks";
-
+import { useLiveQuery } from "hooks/useLiveQuery";
 import { ExtendedBuildGroupSchema } from "lib/build";
 import { BuildGroupSchema, BuildSchema, EdgeSchema, db } from "lib/db";
 

@@ -1,4 +1,5 @@
-import { useContext, useState } from "react";
+import React, { useContext, useState } from "react";
+import ReactDOM from "react-dom/client";
 
 import { ModalContext, ModalProvider } from "context/modal";
 import { PageId, PageProps } from "lib/page";
@@ -68,10 +69,16 @@ const AppInner = () => {
   );
 };
 
-export const App = () => {
+const App = () => {
   return (
     <ModalProvider>
       <AppInner />
     </ModalProvider>
   );
 };
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
