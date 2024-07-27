@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 
 import { NativeWindow } from "./api/native-window";
+import { connectTo, DatabaseName, disconnectFrom } from "./db";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -44,14 +45,13 @@ function bindApiToIpcChannels(
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  // TODO Open the core database file and run any pending migrations
-  // try {
-  //   await connectTo(DatabaseName.SCRAPE);
-  // } catch (e) {
-  //   console.error("Failed to connect to database!");
-  //   console.error(e);
-  //   app.quit();
-  // }
+  try {
+    await connectTo(DatabaseName.USER_DATA); // first connection will run any pending migrations
+  } catch (e) {
+    console.error("Failed to connect to database!");
+    console.error(e);
+    app.quit();
+  }
 
   // *Before* loading the HTML file so that the handler is guaranteed to be ready before you send out an invoke() call from the renderer process
   NativeWindow.initMain();
@@ -76,5 +76,13 @@ app.on("activate", () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+let cleanupIsComplete = false;
+
+app.on("before-quit", async (e) => {
+  if (!cleanupIsComplete) {
+    e.preventDefault();
+    await disconnectFrom(DatabaseName.USER_DATA);
+    cleanupIsComplete = true;
+    app.quit();
+  }
+});

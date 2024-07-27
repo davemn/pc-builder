@@ -1,3 +1,5 @@
+import { BuildComponentStoreName } from "./build";
+
 /**
  * @deprecated
  * Stubs out the Dexie db & table APIs with an empty implementation, to help transition
@@ -100,4 +102,15 @@ class DexieTableQueryStub<T> {
   anyOf(keys: Array<any>) {
     return this;
   }
+}
+
+export function getAllBuildComponentsOfType(
+  dataStoreName: BuildComponentStoreName
+) {
+  return window.UserDataModel.dispatch({
+    type: "getAllBuildComponentsOfType",
+    body: {
+      dataStoreName,
+    },
+  });
 }

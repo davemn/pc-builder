@@ -27,10 +27,8 @@ declare global {
     NativeWindow: {
       setTitle: (title: string) => void;
     };
-    Scrape: {
-      getListings: (type: string) => Promise<Array<any>>;
-      deleteListings: (type: string) => Promise<void>;
-      scrapeListings: (domain: string, type: string) => Promise<Array<any>>;
+    UserDataModel: {
+      dispatch: (action: any) => Promise<any>;
     };
   }
 }
