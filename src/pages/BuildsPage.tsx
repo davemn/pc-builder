@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
+import { useBuildGroups } from "hooks/useBuildGroups";
 import { useLiveQuery } from "hooks/useLiveQuery";
 import {
   BuildComponentMeta,
@@ -390,42 +391,7 @@ const BuildGroup = (props: BuildGroupProps) => {
 
 export const BuildsPage = (props: BuildsPageProps) => {
   const { navigate } = props;
-
-  const buildGroups = useLiveQuery<
-    Array<BuildGroupSchema & { builds: Array<BuildSchema> }>
-  >(async () => {
-    const buildGroups = await db
-      .table<BuildGroupSchema>("buildGroup")
-      .toArray();
-
-    const buildGroupsWithBuilds = [];
-
-    for (const buildGroup of buildGroups) {
-      const edges = await db
-        .table("edges")
-        .where({
-          sourceId: buildGroup.id,
-          sourceType: "buildGroup",
-          targetType: "build",
-        })
-        .toArray();
-
-      if (!edges || edges.length === 0) {
-        buildGroupsWithBuilds.push({ ...buildGroup, builds: [] });
-        continue;
-      }
-
-      const builds = await db
-        .table("build")
-        .where(":id")
-        .anyOf(edges.map((edge) => edge.targetId))
-        .toArray();
-
-      buildGroupsWithBuilds.push({ ...buildGroup, builds });
-    }
-
-    return buildGroupsWithBuilds;
-  }, []);
+  const { addBuildGroup, buildGroups } = useBuildGroups();
 
   return (
     <Layout
@@ -434,19 +400,7 @@ export const BuildsPage = (props: BuildsPageProps) => {
           <h1>All Machines</h1>
           <Button
             onClick={async () => {
-              const newGroupId = await db.transaction(
-                "rw",
-                ["edges", "buildGroup"],
-                async (tx) => {
-                  const groupId = await tx
-                    .table<Omit<BuildGroupSchema, "id">>("buildGroup")
-                    .add({
-                      name: "New Machine",
-                    });
-
-                  return groupId;
-                }
-              );
+              const newGroupId = await addBuildGroup("New Machine");
             }}
             size={ButtonSize.NORMAL}
             variant={ButtonVariant.ACTIVE}

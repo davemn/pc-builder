@@ -1,4 +1,5 @@
 import { BuildComponentStoreName } from "./build";
+import { BuildGroupSchema, BuildSchema, EdgeSchema } from "./db";
 
 /**
  * @deprecated
@@ -112,5 +113,35 @@ export function getAllBuildComponentsOfType(
     body: {
       dataStoreName,
     },
+  });
+}
+
+export function addBuildGroup(name: string): Promise<number> {
+  return window.UserDataModel.dispatch({
+    type: "addBuildGroup",
+    body: {
+      name,
+    },
+  });
+}
+
+export function getAllBuildGroups(): Promise<Array<BuildGroupSchema>> {
+  return window.UserDataModel.dispatch({
+    type: "getAllBuildGroups",
+    body: {},
+  });
+}
+
+export function getBuildsWhere(conditions: any): Promise<Array<BuildSchema>> {
+  return window.UserDataModel.dispatch({
+    type: "getBuildsWhere",
+    body: conditions,
+  });
+}
+
+export function getEdgesWhere(conditions: any): Promise<Array<EdgeSchema>> {
+  return window.UserDataModel.dispatch({
+    type: "getEdgesWhere",
+    body: conditions,
   });
 }

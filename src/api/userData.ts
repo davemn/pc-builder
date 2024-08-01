@@ -1,4 +1,4 @@
-import { ipcMain, app, contextBridge, ipcRenderer } from "electron";
+import { ipcMain, app } from "electron";
 import type { Knex as KnexNamespace } from "knex";
 
 import { DatabaseMigration, DatabaseName, connectTo } from "../db";
@@ -8,11 +8,64 @@ interface IpcAction {
   body: { [key: string]: any };
 }
 
-interface IndexableClass {
-  [key: string]: any;
+interface IRow {
+  [key: string]: string | number | null;
 }
 
-const GET_ALL_BUILD_COMPONENTS_OF_TYPE_EVENT = "getAllBuildComponentsOfType";
+function snakeCaseToCamelCase(str: string) {
+  return str.replace(/(_\w)/g, (m) => m[1].toUpperCase());
+}
+
+function camelCaseToSnakeCase(str: string) {
+  // insert an underscore between adjacent characters with differing cases
+  return str.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+const OutputRowMapper = {
+  generic: (row: IRow) => {
+    const output: IRow = {};
+    for (const key in row) {
+      output[snakeCaseToCamelCase(key)] = row[key];
+    }
+    return output;
+  },
+  edges: (row: IRow) => {
+    const outputRow: IRow = OutputRowMapper.generic(row);
+
+    if ("sourceType" in outputRow && typeof outputRow.sourceType === "string") {
+      outputRow.sourceType = snakeCaseToCamelCase(outputRow.sourceType);
+    }
+
+    if ("targetType" in outputRow && typeof outputRow.targetType === "string") {
+      outputRow.targetType = snakeCaseToCamelCase(outputRow.targetType);
+    }
+
+    return outputRow;
+  },
+};
+
+const InputRowMapper = {
+  generic: (row: IRow) => {
+    const inputRow: IRow = {};
+    for (const key in row) {
+      inputRow[camelCaseToSnakeCase(key)] = row[key];
+    }
+    return inputRow;
+  },
+  edges: (row: IRow) => {
+    const inputRow: IRow = InputRowMapper.generic(row);
+
+    if ("source_type" in inputRow && typeof inputRow.source_type === "string") {
+      inputRow.source_type = camelCaseToSnakeCase(inputRow.source_type);
+    }
+
+    if ("target_type" in inputRow && typeof inputRow.target_type === "string") {
+      inputRow.target_type = camelCaseToSnakeCase(inputRow.target_type);
+    }
+
+    return inputRow;
+  },
+};
 
 export class UserDataModel {
   static initMain() {
@@ -21,19 +74,6 @@ export class UserDataModel {
     }
 
     return new UserDataModel();
-  }
-
-  static initPreload() {
-    contextBridge.exposeInMainWorld("UserDataModel", {
-      dispatch: (action: any) =>
-        ipcRenderer.invoke("UserDataModel:dispatch", action),
-
-      getAllBuildComponentsOfType: (type: string) =>
-        ipcRenderer.invoke(
-          `UserDataModel:${GET_ALL_BUILD_COMPONENTS_OF_TYPE_EVENT}`,
-          type
-        ),
-    });
   }
 
   constructor() {
@@ -50,11 +90,6 @@ export class UserDataModel {
 
         throw new Error(`Unknown action type: ${type}`);
       });
-
-      ipcMain.handle(
-        `UserDataModel:${GET_ALL_BUILD_COMPONENTS_OF_TYPE_EVENT}`,
-        (event, type) => this.getAllBuildComponentsOfType(type)
-      );
     }
   }
 
@@ -63,8 +98,41 @@ export class UserDataModel {
   async getAllBuildComponentsOfType({ dataStoreName }: IpcAction["body"]) {
     const db = await connectTo(DatabaseName.USER_DATA);
     // TODO enforce that dataStoreName is one of the component tables only
-    const rows = await db(dataStoreName).select("*");
-    return rows;
+    const tableName = camelCaseToSnakeCase(dataStoreName);
+
+    const rows = await db(tableName).select("*");
+    return rows.map(OutputRowMapper.generic);
+  }
+
+  async addBuildGroup({ name }: IpcAction["body"]) {
+    const db = await connectTo(DatabaseName.USER_DATA);
+    const [newRow] = await db("build_group").insert({ name }).returning("id");
+    return newRow.id;
+  }
+
+  async getAllBuildGroups() {
+    const db = await connectTo(DatabaseName.USER_DATA);
+    const rows = await db("build_group").select("*");
+    return rows.map(OutputRowMapper.generic);
+  }
+
+  async getBuildsWhere(rawConditions: IRow) {
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const conditions = InputRowMapper.generic(rawConditions);
+
+    const rows = await db("build").where(conditions).select("*");
+    return rows.map(OutputRowMapper.generic);
+  }
+
+  async getEdgesWhere(rawConditions: IRow) {
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    // Rewrite where clause keys (and some values) to snake_case
+    const conditions = InputRowMapper.edges(rawConditions);
+
+    const rows = await db("edge").where(conditions).select("*");
+    return rows.map(OutputRowMapper.edges);
   }
 }
 

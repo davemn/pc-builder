@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 
 import { NativeWindow } from "./api/native-window";
+import { UserDataModel } from "./api/userData";
 import { connectTo, DatabaseName, disconnectFrom } from "./db";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -55,6 +56,7 @@ app.whenReady().then(async () => {
 
   // *Before* loading the HTML file so that the handler is guaranteed to be ready before you send out an invoke() call from the renderer process
   NativeWindow.initMain();
+  UserDataModel.initMain();
 
   createWindow();
 });

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useContext, useState } from "react";
 import ReactDOM from "react-dom/client";
 
@@ -69,11 +70,15 @@ const AppInner = () => {
   );
 };
 
+const queryClient = new QueryClient();
+
 const App = () => {
   return (
-    <ModalProvider>
-      <AppInner />
-    </ModalProvider>
+    <QueryClientProvider client={queryClient}>
+      <ModalProvider>
+        <AppInner />
+      </ModalProvider>
+    </QueryClientProvider>
   );
 };
 
