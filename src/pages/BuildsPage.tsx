@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
+import { useBuild } from "hooks/useBuild";
 import { useBuildGroups } from "hooks/useBuildGroups";
 import { useLiveQuery } from "hooks/useLiveQuery";
 import {
@@ -269,56 +270,9 @@ const BuildSummaryPlaceholder = (props: BuildSummaryPlaceholderProps) => {
 const BuildGroup = (props: BuildGroupProps) => {
   const { builds, id: groupId, name, navigate } = props;
 
-  const [selectedBuild, setSelectedBuild] = useState<BuildSchema | null>(null);
+  const [selectedBuildId, setSelectedBuildId] = useState<number | null>(null);
 
-  const selectedBuildComponentsByType = useLiveQuery<
-    RecordByStoreName | null,
-    null
-  >(
-    async () => {
-      if (!selectedBuild) {
-        return null;
-      }
-
-      const edges = await db
-        .table<EdgeSchema>("edges")
-        .where({
-          sourceId: selectedBuild.id,
-          sourceType: "build",
-        })
-        .toArray();
-
-      const edgesByType = edges.reduce((acc, edge) => {
-        if (!acc[edge.targetType]) {
-          acc[edge.targetType] = [];
-        }
-
-        acc[edge.targetType].push(edge);
-
-        return acc;
-      }, {} as Record<StoreName, Array<EdgeSchema>>);
-
-      const buildComponentsByType: RecordByStoreName = {} as RecordByStoreName;
-
-      for (const componentType of Object.keys(
-        edgesByType
-      ) as Array<BuildComponentStoreName>) {
-        const componentEdges = edgesByType[componentType];
-
-        const components = await db
-          .table(componentType)
-          .where(":id")
-          .anyOf(componentEdges.map((edge) => edge.targetId))
-          .toArray();
-
-        buildComponentsByType[componentType] = components;
-      }
-
-      return buildComponentsByType;
-    },
-    [selectedBuild?.id],
-    null
-  );
+  const { build: selectedBuild } = useBuild(selectedBuildId);
 
   return (
     <>
@@ -329,20 +283,13 @@ const BuildGroup = (props: BuildGroupProps) => {
           <BuildSummary
             key={build.id}
             build={build}
-            compareToBuild={
-              selectedBuild && selectedBuildComponentsByType
-                ? {
-                    ...selectedBuild,
-                    components: selectedBuildComponentsByType,
-                  }
-                : null
-            }
+            compareToBuild={selectedBuild}
             isSelected={selectedBuild?.id === build.id}
             onClick={() => {
               if (selectedBuild?.id === build.id) {
-                setSelectedBuild(null);
+                setSelectedBuildId(null);
               } else {
-                setSelectedBuild({ ...build });
+                setSelectedBuildId(build.id);
               }
             }}
             onCopy={async () => {

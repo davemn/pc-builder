@@ -1,5 +1,5 @@
 import { BuildComponentStoreName } from "./build";
-import { BuildGroupSchema, BuildSchema, EdgeSchema } from "./db";
+import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema } from "./db";
 
 /**
  * @deprecated
@@ -105,17 +105,6 @@ class DexieTableQueryStub<T> {
   }
 }
 
-export function getAllBuildComponentsOfType(
-  dataStoreName: BuildComponentStoreName
-) {
-  return window.UserDataModel.dispatch({
-    type: "getAllBuildComponentsOfType",
-    body: {
-      dataStoreName,
-    },
-  });
-}
-
 export function addBuildGroup(name: string): Promise<number> {
   return window.UserDataModel.dispatch({
     type: "addBuildGroup",
@@ -143,5 +132,30 @@ export function getEdgesWhere(conditions: any): Promise<Array<EdgeSchema>> {
   return window.UserDataModel.dispatch({
     type: "getEdgesWhere",
     body: conditions,
+  });
+}
+
+/** @deprecated */
+export function getAllBuildComponentsOfType(
+  dataStoreName: BuildComponentStoreName
+) {
+  return window.UserDataModel.dispatch({
+    type: "getAllBuildComponentsOfType",
+    body: {
+      dataStoreName,
+    },
+  });
+}
+
+export function getComponentsWhere<T extends BuildComponentStoreName>(
+  tableName: T,
+  conditions: any
+): Promise<Array<Schema<T>>> {
+  return window.UserDataModel.dispatch({
+    type: "getComponentsWhere",
+    body: {
+      tableName,
+      conditions,
+    },
   });
 }

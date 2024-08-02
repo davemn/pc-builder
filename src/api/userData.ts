@@ -95,6 +95,7 @@ export class UserDataModel {
 
   // Add new methods here, no other boilerplate in main / preload needed
 
+  /** @deprecated */
   async getAllBuildComponentsOfType({ dataStoreName }: IpcAction["body"]) {
     const db = await connectTo(DatabaseName.USER_DATA);
     // TODO enforce that dataStoreName is one of the component tables only
@@ -120,6 +121,7 @@ export class UserDataModel {
     const db = await connectTo(DatabaseName.USER_DATA);
 
     const conditions = InputRowMapper.generic(rawConditions);
+    // TODO support WHERE IN clauses
 
     const rows = await db("build").where(conditions).select("*");
     return rows.map(OutputRowMapper.generic);
@@ -130,9 +132,61 @@ export class UserDataModel {
 
     // Rewrite where clause keys (and some values) to snake_case
     const conditions = InputRowMapper.edges(rawConditions);
+    // TODO support WHERE IN clauses
 
     const rows = await db("edge").where(conditions).select("*");
     return rows.map(OutputRowMapper.edges);
+  }
+
+  async getComponentsWhere({
+    tableName: rawTableName,
+    conditions: rawConditions,
+  }: IpcAction["body"]) {
+    const tableName = camelCaseToSnakeCase(rawTableName);
+
+    if (
+      ![
+        "cpu",
+        "gpu",
+        "ram",
+        "m2_storage",
+        "sata_storage",
+        "psu",
+        "mobo",
+        "cooler",
+      ].includes(tableName)
+    ) {
+      throw new Error(`Invalid table name: "${tableName}"`);
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const conditions = InputRowMapper.generic(rawConditions);
+
+    let query = db(tableName);
+    let isFirstWhereClause = true;
+
+    for (const [key, value] of Object.entries(conditions)) {
+      if (Array.isArray(value)) {
+        if (isFirstWhereClause) {
+          query = query.where(key, "in", value);
+          isFirstWhereClause = false;
+        } else {
+          query = query.andWhere(key, "in", value);
+        }
+      } else {
+        if (isFirstWhereClause) {
+          query = query.where(key, value);
+          isFirstWhereClause = false;
+        } else {
+          query = query.andWhere(key, value);
+        }
+      }
+    }
+
+    const rows = await query.select("*");
+
+    return rows.map(OutputRowMapper.generic);
   }
 }
 

@@ -19,7 +19,7 @@ interface BuildProviderProps {
 export const BuildProvider = (props: BuildProviderProps) => {
   const { buildId, children } = props;
 
-  const build = useBuild(buildId);
+  const { build } = useBuild(buildId);
 
   return (
     <BuildContext.Provider value={{ build }}>{children}</BuildContext.Provider>

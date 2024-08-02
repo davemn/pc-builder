@@ -2,6 +2,7 @@ import { DexieStub } from "./query";
 
 const DATABASE_NAME = "PCBuilder";
 
+// TODO "edges" should be "edge" to match the schema & database
 export type StoreName =
   | "edges"
   | "build"

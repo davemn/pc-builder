@@ -38,6 +38,13 @@ export function edgeIsBuildComponent(
   );
 }
 
+/** Pass to Array.filter() to get type narrowing on EdgeSchema, e.g. `edges.filter(edgeIsBuildComponentType(componentType))` */
+export const edgeIsBuildComponentType =
+  <T extends BuildComponentStoreName>(componentType: T) =>
+  (edge: EdgeSchema): edge is EdgeSchema<"build", T> => {
+    return edge.sourceType === "build" && edge.targetType === componentType;
+  };
+
 export type ExtendedBuildSchema = BuildSchema & {
   components: {
     [T in BuildComponentStoreName]: Array<Schema<T> & { edgeId: number }>;
