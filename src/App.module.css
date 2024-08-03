@@ -1,4 +1,22 @@
-.container {
+.windowContainer {
+  position: relative;
   height: 100vh;
+}
+
+.titleBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px; /* picked by experimenting with what feels natural */
+
+  /* background-color: var(--accent0); */
+
+  /* App window isn't draggable on MacOS without this! */
+  -webkit-app-region: drag;
+}
+
+.container {
+  height: 100%;
   overflow: hidden;
 }

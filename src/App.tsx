@@ -49,24 +49,27 @@ const AppInner = () => {
   const { isModalOpen } = useContext(ModalContext);
 
   return (
-    <Div.Container
-      style={{
-        ...(isModalOpen
-          ? {
-              filter: "blur(2px)",
-              overflow: "hidden",
-              pointerEvents: "none",
-            }
-          : {}),
-      }}
-    >
-      {isPageId("builds", page) && (
-        <BuildsPage navigate={navigate} {...page.props} />
-      )}
-      {isPageId("editBuild", page) && (
-        <EditBuildPage navigate={navigate} {...page.props} />
-      )}
-    </Div.Container>
+    <Div.WindowContainer>
+      <Div.TitleBar />
+      <Div.Container
+        style={{
+          ...(isModalOpen
+            ? {
+                filter: "blur(2px)",
+                overflow: "hidden",
+                pointerEvents: "none",
+              }
+            : {}),
+        }}
+      >
+        {isPageId("builds", page) && (
+          <BuildsPage navigate={navigate} {...page.props} />
+        )}
+        {isPageId("editBuild", page) && (
+          <EditBuildPage navigate={navigate} {...page.props} />
+        )}
+      </Div.Container>
+    </Div.WindowContainer>
   );
 };
 

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, screen } from "electron";
 import path from "path";
 
 import { NativeWindow } from "./api/native-window";
@@ -11,16 +11,25 @@ if (require("electron-squirrel-startup")) {
 }
 
 function createWindow() {
-  // Create the browser window.
+  const primaryDisplay = screen.getPrimaryDisplay();
+
+  // Alt., window.maximize()
+  const { width, height } = primaryDisplay.workAreaSize;
+
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width,
+    height,
+    /* shown before the renderer has finished running the first time */
+    backgroundColor: "#3a3a3a",
+
+    titleBarStyle: "hidden",
+    trafficLightPosition: { x: 20, y: 8 },
+
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
   });
 
-  // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
@@ -29,8 +38,9 @@ function createWindow() {
     );
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools({
+    mode: "bottom",
+  });
 }
 
 function bindApiToIpcChannels(
