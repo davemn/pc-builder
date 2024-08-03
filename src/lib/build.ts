@@ -45,9 +45,14 @@ export const edgeIsBuildComponentType =
     return edge.sourceType === "build" && edge.targetType === componentType;
   };
 
+export type ExtendedBuildComponentSchema<T extends BuildComponentStoreName> =
+  Schema<T> & {
+    edgeId: number;
+  };
+
 export type ExtendedBuildSchema = BuildSchema & {
   components: {
-    [T in BuildComponentStoreName]: Array<Schema<T> & { edgeId: number }>;
+    [T in BuildComponentStoreName]: Array<ExtendedBuildComponentSchema<T>>;
   };
 };
 

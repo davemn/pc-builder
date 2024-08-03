@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import { useBuild } from "hooks/useBuild";
+import { useExtendedBuild } from "hooks/useBuild";
 import { ExtendedBuildSchema } from "lib/build";
 
 interface BuildContextValue {
@@ -19,7 +19,7 @@ interface BuildProviderProps {
 export const BuildProvider = (props: BuildProviderProps) => {
   const { buildId, children } = props;
 
-  const { build } = useBuild(buildId);
+  const { build } = useExtendedBuild(buildId);
 
   return (
     <BuildContext.Provider value={{ build }}>{children}</BuildContext.Provider>

@@ -2,23 +2,15 @@ import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
-import { useBuild } from "hooks/useBuild";
+import { useAssignedComponents, useExtendedBuild } from "hooks/useBuild";
 import { useBuildGroups } from "hooks/useBuildGroups";
-import { useLiveQuery } from "hooks/useLiveQuery";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
-import {
-  BuildGroupSchema,
-  BuildSchema,
-  EdgeSchema,
-  Schema,
-  StoreName,
-  db,
-} from "lib/db";
-import { BuildsPageProps, NavigateProp, PageId } from "lib/page";
+import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
+import { BuildsPageProps } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./BuildsPage.module.css";
@@ -152,30 +144,10 @@ const IndicatorPrice = (props: IndicatorPriceProps) => {
 const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
   const { buildId, compareToPrice, componentType } = props;
 
-  const assignedSlots = useLiveQuery<
-    Array<Schema<BuildComponentStoreName>>
-  >(async () => {
-    const edges = await db
-      .table("edges")
-      .where({
-        sourceId: buildId,
-        sourceType: "build",
-        targetType: componentType,
-      })
-      .toArray();
-
-    if (!edges || edges.length === 0) {
-      return [];
-    }
-
-    const components = await db
-      .table(componentType)
-      .where(":id")
-      .anyOf(edges.map((edge) => edge.targetId))
-      .toArray();
-
-    return components;
-  }, [buildId, componentType]);
+  const { components: assignedSlots } = useAssignedComponents(
+    buildId,
+    componentType
+  );
 
   const componentMeta = BuildComponentMeta[componentType];
 
@@ -272,7 +244,7 @@ const BuildGroup = (props: BuildGroupProps) => {
 
   const [selectedBuildId, setSelectedBuildId] = useState<number | null>(null);
 
-  const { build: selectedBuild } = useBuild(selectedBuildId);
+  const { build: selectedBuild } = useExtendedBuild(selectedBuildId);
 
   return (
     <>
