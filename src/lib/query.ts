@@ -105,12 +105,10 @@ class DexieTableQueryStub<T> {
   }
 }
 
-export function addBuildGroup(name: string): Promise<number> {
+export function addBuildGroup(body: { name: string }): Promise<number> {
   return window.UserDataModel.dispatch({
     type: "addBuildGroup",
-    body: {
-      name,
-    },
+    body,
   });
 }
 
@@ -160,11 +158,19 @@ export function getComponentsWhere<T extends BuildComponentStoreName>(
   });
 }
 
-export function deleteBuild(id: number): Promise<void> {
+export function deleteBuild(body: { id: number }): Promise<void> {
   return window.UserDataModel.dispatch({
     type: "deleteBuild",
-    body: {
-      id,
-    },
+    body,
+  });
+}
+
+export function createOrCopyBuild(body: {
+  groupId: number;
+  buildIdToCopy?: number;
+}): Promise<number> {
+  return window.UserDataModel.dispatch({
+    type: "createOrCopyBuild",
+    body,
   });
 }

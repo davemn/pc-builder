@@ -201,7 +201,7 @@ export class UserDataModel {
 
   async deleteBuild({ id: buildId }: IpcAction["body"]) {
     if (typeof buildId !== "number" || buildId < 0) {
-      throw new Error("Invalid ID");
+      throw new Error("Invalid build ID");
     }
 
     const db = await connectTo(DatabaseName.USER_DATA);
@@ -217,6 +217,73 @@ export class UserDataModel {
         .del();
 
       await tx("build").where({ id: buildId }).del();
+    });
+  }
+
+  async createOrCopyBuild({ groupId, buildIdToCopy }: IpcAction["body"]) {
+    if (typeof groupId !== "number" || groupId < 0) {
+      throw new Error("Invalid group ID");
+    }
+
+    if (typeof buildIdToCopy !== "number" && buildIdToCopy !== undefined) {
+      throw new Error("Invalid build ID");
+    }
+
+    if (typeof buildIdToCopy === "number" && buildIdToCopy < 0) {
+      throw new Error("Invalid build ID");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    return db.transaction(async (tx) => {
+      let buildId: number;
+      if (buildIdToCopy === undefined) {
+        const [newBuild] = await tx("build")
+          .insert({ name: "New Build", price: 0 })
+          .returning("id");
+        buildId = newBuild.id;
+      } else {
+        const buildToCopy = await tx("build")
+          .where({ id: buildIdToCopy })
+          .first();
+
+        if (!buildToCopy) {
+          throw new Error("Build to copy not found");
+        }
+
+        const [copiedBuild] = await tx("build")
+          .insert({
+            name: `${buildToCopy.name} (Copy)`,
+            price: buildToCopy.price,
+          })
+          .returning("id");
+        buildId = copiedBuild.id;
+
+        const edges = await tx("edge")
+          .where({
+            source_id: buildIdToCopy,
+            source_type: "build",
+          })
+          .select("*");
+
+        for (const edge of edges) {
+          await tx("edge").insert({
+            source_id: buildId,
+            source_type: "build",
+            target_id: edge.target_id,
+            target_type: edge.target_type,
+          });
+        }
+      }
+
+      await tx("edge").insert({
+        source_id: groupId,
+        source_type: "build_group",
+        target_id: buildId,
+        target_type: "build",
+      });
+
+      return buildId;
     });
   }
 }

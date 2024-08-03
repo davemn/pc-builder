@@ -80,27 +80,39 @@ export function useAssignedComponents<T extends BuildComponentStoreName>(
 }
 
 export function useBuildMutations(): {
-  deleteBuild: (buildId: number) => Promise<void>;
+  deleteBuild: (body: { id: number }) => Promise<void>;
+  createOrCopyBuild: (body: {
+    groupId: number;
+    buildIdToCopy?: number;
+  }) => Promise<number>;
 } {
   const queryClient = useQueryClient();
 
   const { mutateAsync: deleteBuild } = useMutation({
     mutationFn: Query.deleteBuild,
-    onSuccess: (_, buildId, context) => {
+    /* First argument is return value of mutation fn, second is the argument(s) to the mutation fn */
+    onSuccess: (_, buildId) => {
       queryClient.removeQueries({ queryKey: ["build", buildId] });
       // Need to refetch build groups since the deleted build was removed from one
       queryClient.invalidateQueries({ queryKey: ["buildGroups"] });
     },
   });
 
+  const { mutateAsync: createOrCopyBuild } = useMutation({
+    mutationFn: Query.createOrCopyBuild,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buildGroups"] });
+    },
+  });
+
   return {
     deleteBuild,
+    createOrCopyBuild,
   };
 }
 
 export function useBuild(buildId: number | null | undefined): {
   build: BuildSchema | null;
-  deleteBuild: () => Promise<void>;
   isLoading: boolean;
   isError: boolean;
 } {
@@ -127,11 +139,8 @@ export function useBuild(buildId: number | null | undefined): {
     },
   });
 
-  const { deleteBuild } = useBuildMutations();
-
   return {
     build: build ?? null,
-    deleteBuild: () => deleteBuild(buildId ?? -1),
     isLoading,
     isError,
   };
@@ -139,11 +148,10 @@ export function useBuild(buildId: number | null | undefined): {
 
 export function useExtendedBuild(buildId: number | null | undefined): {
   build: ExtendedBuildSchema | null;
-  deleteBuild: () => Promise<void>;
   isLoading: boolean;
   isError: boolean;
 } {
-  const { build, deleteBuild } = useBuild(buildId);
+  const { build } = useBuild(buildId);
 
   const {
     components: cpu,
@@ -211,7 +219,6 @@ export function useExtendedBuild(buildId: number | null | undefined): {
 
   return {
     build: extendedBuild,
-    deleteBuild,
     isLoading:
       cpuIsLoading ||
       gpuIsLoading ||

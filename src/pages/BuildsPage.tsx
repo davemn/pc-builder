@@ -13,7 +13,7 @@ import {
   BuildComponentStoreName,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
-import { BuildSchema, EdgeSchema, Schema, db } from "lib/db";
+import { BuildSchema, Schema } from "lib/db";
 import { BuildsPageProps } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -55,63 +55,6 @@ interface BuildSummaryComponentProps {
 interface IndicatorPriceProps {
   price: number | null;
   compareToPrice: number | null;
-}
-
-async function createOrCopyBuild(
-  groupId: number,
-  buildIdToCopy?: number
-): Promise<number> {
-  // create new / copy build and assign to group
-  return await db.transaction("rw", ["edges", "build"], async (tx) => {
-    let buildId: number;
-    if (buildIdToCopy === undefined) {
-      buildId = await tx.table<Omit<BuildSchema, "id">>("build").add({
-        name: "New Build",
-        price: 0,
-      });
-    } else {
-      const buildToCopy = await tx
-        .table<BuildSchema>("build")
-        .get(buildIdToCopy);
-      if (!buildToCopy) {
-        throw new Error("Build to copy not found");
-      }
-
-      // copy & rename build
-      buildId = await tx.table<Omit<BuildSchema, "id">>("build").add({
-        name: `${buildToCopy.name} (Copy)`,
-        price: buildToCopy.price,
-      });
-
-      const edges = await tx
-        .table<EdgeSchema>("edges")
-        .where({
-          sourceId: buildIdToCopy,
-          sourceType: "build",
-        })
-        .toArray();
-
-      // also copy all edges
-      for (const edge of edges) {
-        await tx.table<Omit<EdgeSchema, "id">>("edges").add({
-          sourceId: buildId,
-          sourceType: "build",
-          targetId: edge.targetId,
-          targetType: edge.targetType,
-        });
-      }
-    }
-
-    // associate new build with group
-    await tx.table<Omit<EdgeSchema, "id">>("edges").add({
-      sourceId: groupId,
-      sourceType: "buildGroup",
-      targetId: buildId,
-      targetType: "build",
-    });
-
-    return buildId;
-  });
 }
 
 function getSlotPrice(
@@ -252,7 +195,7 @@ const BuildGroup = (props: BuildGroupProps) => {
 
   const { build: selectedBuild } = useExtendedBuild(selectedBuildId);
 
-  const { deleteBuild } = useBuildMutations();
+  const { createOrCopyBuild, deleteBuild } = useBuildMutations();
 
   return (
     <>
@@ -273,7 +216,7 @@ const BuildGroup = (props: BuildGroupProps) => {
               }
             }}
             onCopy={async () => {
-              await createOrCopyBuild(groupId, build.id);
+              await createOrCopyBuild({ groupId, buildIdToCopy: build.id });
             }}
             onEdit={() => {
               navigate("editBuild", {
@@ -283,13 +226,13 @@ const BuildGroup = (props: BuildGroupProps) => {
             }}
             onRemove={async () => {
               // remove build from group & delete
-              await deleteBuild(build.id);
+              await deleteBuild({ id: build.id });
             }}
           />
         ))}
         <BuildSummaryPlaceholder
           onClick={async () => {
-            const newBuildId = await createOrCopyBuild(groupId);
+            const newBuildId = await createOrCopyBuild({ groupId });
             navigate("editBuild", {
               buildGroupId: groupId,
               buildId: newBuildId,
@@ -312,7 +255,7 @@ export const BuildsPage = (props: BuildsPageProps) => {
           <h1>All Machines</h1>
           <Button
             onClick={async () => {
-              const newGroupId = await addBuildGroup("New Machine");
+              const newGroupId = await addBuildGroup({ name: "New Machine" });
             }}
             size={ButtonSize.NORMAL}
             variant={ButtonVariant.ACTIVE}
