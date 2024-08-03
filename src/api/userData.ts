@@ -189,31 +189,35 @@ export class UserDataModel {
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
-    // (1)
     const conditions = InputRowMapper.generic(rawConditions);
 
     let query = db(tableName);
     query = addWhereClauses(query, conditions);
 
-    // (2)
-    // let query = db(tableName);
-
-    // const { id: whereId, ...whereConditions } =
-    //   InputRowMapper.generic(rawConditions);
-
-    // query = query.where(whereConditions);
-
-    // if (whereId !== undefined) {
-    //   if (Array.isArray(whereId)) {
-    //     query = query.andWhere("id", "in", whereId);
-    //   } else {
-    //     query = query.andWhere("id", whereId);
-    //   }
-    // }
-
     const rows = await query.select("*");
 
     return rows.map(OutputRowMapper.generic);
+  }
+
+  async deleteBuild({ id: buildId }: IpcAction["body"]) {
+    if (typeof buildId !== "number" || buildId < 0) {
+      throw new Error("Invalid ID");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    await db.transaction(async (tx) => {
+      // remove build from any group & delete
+      await tx("edge")
+        .where({
+          source_type: "build_group",
+          target_id: buildId,
+          target_type: "build",
+        })
+        .del();
+
+      await tx("build").where({ id: buildId }).del();
+    });
   }
 }
 

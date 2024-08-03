@@ -2,7 +2,11 @@ import { useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
 import { Layout } from "components/Layout";
-import { useAssignedComponents, useExtendedBuild } from "hooks/useBuild";
+import {
+  useAssignedComponents,
+  useBuildMutations,
+  useExtendedBuild,
+} from "hooks/useBuild";
 import { useBuildGroups } from "hooks/useBuildGroups";
 import {
   BuildComponentMeta,
@@ -160,8 +164,10 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
           compareToPrice={compareToPrice}
         />
       </Div.ComponentName>
-      {assignedSlots?.map((component) => (
-        <h2 key={component.id}>{component.name}</h2>
+      {assignedSlots?.map((component, index) => (
+        <h2 key={`${component.id}-${index}`}>
+          {component.brand} {component.name}
+        </h2>
       ))}
       {(assignedSlots ?? []).length === 0 && (
         <h2 className={classNames.emptySlot}>- None Selected -</h2>
@@ -246,6 +252,8 @@ const BuildGroup = (props: BuildGroupProps) => {
 
   const { build: selectedBuild } = useExtendedBuild(selectedBuildId);
 
+  const { deleteBuild } = useBuildMutations();
+
   return (
     <>
       <h2 className={classNames.buildGroupHeading}>Machine</h2>
@@ -275,22 +283,7 @@ const BuildGroup = (props: BuildGroupProps) => {
             }}
             onRemove={async () => {
               // remove build from group & delete
-              await db.transaction("rw", ["edges", "build"], async (tx) => {
-                await tx
-                  .table<EdgeSchema>("edges")
-                  .where({
-                    sourceId: groupId,
-                    sourceType: "buildGroup",
-                    targetId: build.id,
-                    targetType: "build",
-                  })
-                  .delete();
-
-                await tx
-                  .table<BuildSchema>("build")
-                  .where({ id: build.id })
-                  .delete();
-              });
+              await deleteBuild(build.id);
             }}
           />
         ))}

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   BuildComponentEdgeSchema,
@@ -79,8 +79,28 @@ export function useAssignedComponents<T extends BuildComponentStoreName>(
   return { components: components ?? [], isLoading, isError };
 }
 
+export function useBuildMutations(): {
+  deleteBuild: (buildId: number) => Promise<void>;
+} {
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: deleteBuild } = useMutation({
+    mutationFn: Query.deleteBuild,
+    onSuccess: (_, buildId, context) => {
+      queryClient.removeQueries({ queryKey: ["build", buildId] });
+      // Need to refetch build groups since the deleted build was removed from one
+      queryClient.invalidateQueries({ queryKey: ["buildGroups"] });
+    },
+  });
+
+  return {
+    deleteBuild,
+  };
+}
+
 export function useBuild(buildId: number | null | undefined): {
   build: BuildSchema | null;
+  deleteBuild: () => Promise<void>;
   isLoading: boolean;
   isError: boolean;
 } {
@@ -107,15 +127,23 @@ export function useBuild(buildId: number | null | undefined): {
     },
   });
 
-  return { build: build ?? null, isLoading, isError };
+  const { deleteBuild } = useBuildMutations();
+
+  return {
+    build: build ?? null,
+    deleteBuild: () => deleteBuild(buildId ?? -1),
+    isLoading,
+    isError,
+  };
 }
 
 export function useExtendedBuild(buildId: number | null | undefined): {
   build: ExtendedBuildSchema | null;
+  deleteBuild: () => Promise<void>;
   isLoading: boolean;
   isError: boolean;
 } {
-  const { build } = useBuild(buildId);
+  const { build, deleteBuild } = useBuild(buildId);
 
   const {
     components: cpu,
@@ -183,6 +211,7 @@ export function useExtendedBuild(buildId: number | null | undefined): {
 
   return {
     build: extendedBuild,
+    deleteBuild,
     isLoading:
       cpuIsLoading ||
       gpuIsLoading ||

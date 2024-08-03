@@ -159,3 +159,12 @@ export function getComponentsWhere<T extends BuildComponentStoreName>(
     },
   });
 }
+
+export function deleteBuild(id: number): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "deleteBuild",
+    body: {
+      id,
+    },
+  });
+}
