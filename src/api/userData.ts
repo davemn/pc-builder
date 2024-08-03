@@ -21,6 +21,30 @@ function camelCaseToSnakeCase(str: string) {
   return str.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 }
 
+function addWhereClauses(query: KnexNamespace.QueryBuilder, conditions: IRow) {
+  let isFirstWhereClause = true;
+
+  for (const [key, value] of Object.entries(conditions)) {
+    if (Array.isArray(value)) {
+      if (isFirstWhereClause) {
+        query = query.where(key, "in", value);
+        isFirstWhereClause = false;
+      } else {
+        query = query.andWhere(key, "in", value);
+      }
+    } else {
+      if (isFirstWhereClause) {
+        query = query.where(key, value);
+        isFirstWhereClause = false;
+      } else {
+        query = query.andWhere(key, value);
+      }
+    }
+  }
+
+  return query;
+}
+
 const OutputRowMapper = {
   generic: (row: IRow) => {
     const output: IRow = {};
@@ -121,9 +145,11 @@ export class UserDataModel {
     const db = await connectTo(DatabaseName.USER_DATA);
 
     const conditions = InputRowMapper.generic(rawConditions);
-    // TODO support WHERE IN clauses
 
-    const rows = await db("build").where(conditions).select("*");
+    let query = db("build");
+    query = addWhereClauses(query, conditions);
+
+    const rows = await query.select("*");
     return rows.map(OutputRowMapper.generic);
   }
 
@@ -132,9 +158,11 @@ export class UserDataModel {
 
     // Rewrite where clause keys (and some values) to snake_case
     const conditions = InputRowMapper.edges(rawConditions);
-    // TODO support WHERE IN clauses
 
-    const rows = await db("edge").where(conditions).select("*");
+    let query = db("edge");
+    query = addWhereClauses(query, conditions);
+
+    const rows = await query.select("*");
     return rows.map(OutputRowMapper.edges);
   }
 
@@ -161,28 +189,27 @@ export class UserDataModel {
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
+    // (1)
     const conditions = InputRowMapper.generic(rawConditions);
 
     let query = db(tableName);
-    let isFirstWhereClause = true;
+    query = addWhereClauses(query, conditions);
 
-    for (const [key, value] of Object.entries(conditions)) {
-      if (Array.isArray(value)) {
-        if (isFirstWhereClause) {
-          query = query.where(key, "in", value);
-          isFirstWhereClause = false;
-        } else {
-          query = query.andWhere(key, "in", value);
-        }
-      } else {
-        if (isFirstWhereClause) {
-          query = query.where(key, value);
-          isFirstWhereClause = false;
-        } else {
-          query = query.andWhere(key, value);
-        }
-      }
-    }
+    // (2)
+    // let query = db(tableName);
+
+    // const { id: whereId, ...whereConditions } =
+    //   InputRowMapper.generic(rawConditions);
+
+    // query = query.where(whereConditions);
+
+    // if (whereId !== undefined) {
+    //   if (Array.isArray(whereId)) {
+    //     query = query.andWhere("id", "in", whereId);
+    //   } else {
+    //     query = query.andWhere("id", whereId);
+    //   }
+    // }
 
     const rows = await query.select("*");
 
