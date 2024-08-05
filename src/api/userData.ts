@@ -141,6 +141,18 @@ export class UserDataModel {
     return rows.map(OutputRowMapper.generic);
   }
 
+  async getBuildGroupsWhere(rawConditions: IRow) {
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const conditions = InputRowMapper.generic(rawConditions);
+
+    let query = db("build_group");
+    query = addWhereClauses(query, conditions);
+
+    const rows = await query.select("*");
+    return rows.map(OutputRowMapper.generic);
+  }
+
   async getBuildsWhere(rawConditions: IRow) {
     const db = await connectTo(DatabaseName.USER_DATA);
 

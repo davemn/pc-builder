@@ -1,46 +1,53 @@
-import { useLiveQuery } from "hooks/useLiveQuery";
+import { useQuery } from "@tanstack/react-query";
+
 import { ExtendedBuildGroupSchema } from "lib/build";
-import { BuildGroupSchema, BuildSchema, EdgeSchema, db } from "lib/db";
+import { QueryKey } from "lib/constants";
+import * as Query from "lib/query";
 
 /** Note: A buildGroup is the same as a device. */
-export function useBuildGroup(
-  buildGroupId: number | null | undefined
-): ExtendedBuildGroupSchema | null {
-  return useLiveQuery<ExtendedBuildGroupSchema | null, null>(
-    async () => {
+export function useExtendedBuildGroup(buildGroupId: number | null | undefined) {
+  const {
+    data: buildGroup,
+    isLoading,
+    isError,
+  } = useQuery<ExtendedBuildGroupSchema | null>({
+    queryKey: [QueryKey.BUILD_GROUP, buildGroupId ?? -1],
+    queryFn: async () => {
       if (buildGroupId === null || buildGroupId === undefined) {
         return null;
       }
 
-      const buildGroup = await db
-        .table<BuildGroupSchema>("buildGroup")
-        .get(buildGroupId);
+      const [buildGroup] = await Query.getBuildGroupsWhere({
+        id: buildGroupId,
+      });
 
-      if (!buildGroup) {
-        return null;
+      const edges = await Query.getEdgesWhere({
+        sourceId: buildGroup.id,
+        sourceType: "buildGroup",
+        targetType: "build",
+      });
+
+      if (!edges || edges.length === 0) {
+        return {
+          ...buildGroup,
+          builds: [],
+        };
       }
 
-      const edges = await db
-        .table<EdgeSchema>("edges")
-        .where({
-          sourceId: buildGroupId,
-          sourceType: "buildGroup",
-          targetType: "build",
-        })
-        .toArray();
-
-      const builds = await db
-        .table<BuildSchema>("build")
-        .where(":id")
-        .anyOf(edges.map((edge) => edge.targetId))
-        .toArray();
+      const builds = await Query.getBuildsWhere({
+        id: edges.map((edge) => edge.targetId),
+      });
 
       return {
         ...buildGroup,
         builds,
       };
     },
-    [buildGroupId],
-    null
-  );
+  });
+
+  return {
+    buildGroup: buildGroup ?? null,
+    isLoading,
+    isError,
+  };
 }

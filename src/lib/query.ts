@@ -119,6 +119,15 @@ export function getAllBuildGroups(): Promise<Array<BuildGroupSchema>> {
   });
 }
 
+export function getBuildGroupsWhere(
+  conditions: any
+): Promise<Array<BuildGroupSchema>> {
+  return window.UserDataModel.dispatch({
+    type: "getBuildGroupsWhere",
+    body: conditions,
+  });
+}
+
 export function getBuildsWhere(conditions: any): Promise<Array<BuildSchema>> {
   return window.UserDataModel.dispatch({
     type: "getBuildsWhere",

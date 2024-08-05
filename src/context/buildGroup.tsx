@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import { useBuildGroup } from "hooks/useBuildGroup";
+import { useExtendedBuildGroup } from "hooks/useBuildGroup";
 import { ExtendedBuildGroupSchema } from "lib/build";
 
 interface BuildGroupContextValue {
@@ -19,7 +19,7 @@ interface BuildGroupProviderProps {
 export const BuildGroupProvider = (props: BuildGroupProviderProps) => {
   const { buildGroupId, children } = props;
 
-  const buildGroup = useBuildGroup(buildGroupId);
+  const { buildGroup } = useExtendedBuildGroup(buildGroupId);
 
   return (
     <BuildGroupContext.Provider value={{ buildGroup }}>
