@@ -7,6 +7,7 @@ import {
   ExtendedBuildSchema,
   edgeIsBuildComponentType,
 } from "lib/build";
+import { QueryKey } from "lib/constants";
 import { BuildSchema } from "lib/db";
 import * as Query from "lib/query";
 
@@ -61,7 +62,7 @@ export function useAssignedComponents<T extends BuildComponentStoreName>(
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["build", buildId ?? -1, componentType],
+    queryKey: [QueryKey.BUILD, buildId ?? -1, componentType],
     queryFn: async () => {
       if (buildId === null || buildId === undefined) {
         return [];
@@ -92,16 +93,16 @@ export function useBuildMutations(): {
     mutationFn: Query.deleteBuild,
     /* First argument is return value of mutation fn, second is the argument(s) to the mutation fn */
     onSuccess: (_, buildId) => {
-      queryClient.removeQueries({ queryKey: ["build", buildId] });
+      queryClient.removeQueries({ queryKey: [QueryKey.BUILD, buildId] });
       // Need to refetch build groups since the deleted build was removed from one
-      queryClient.invalidateQueries({ queryKey: ["buildGroups"] });
+      queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
     },
   });
 
   const { mutateAsync: createOrCopyBuild } = useMutation({
     mutationFn: Query.createOrCopyBuild,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["buildGroups"] });
+      queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
     },
   });
 
@@ -121,7 +122,7 @@ export function useBuild(buildId: number | null | undefined): {
     isLoading,
     isError,
   } = useQuery<BuildSchema | null>({
-    queryKey: ["build", buildId ?? -1],
+    queryKey: [QueryKey.BUILD, buildId ?? -1],
     queryFn: async () => {
       if (buildId === null || buildId === undefined) {
         return null;
