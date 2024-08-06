@@ -1,5 +1,6 @@
-import { BuildComponentStoreName } from "./build";
-import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema } from "./db";
+import { BuildComponentStoreName } from "lib/build";
+import { SortDirection } from "lib/constants";
+import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema } from "lib/db";
 
 /**
  * @deprecated
@@ -105,6 +106,15 @@ class DexieTableQueryStub<T> {
   }
 }
 
+export interface QueryWhereConditions {
+  [key: string]: string | number | string[] | number[] | null;
+}
+
+export type QueryOrderBy = Array<{
+  columnName: string;
+  direction: SortDirection;
+}>;
+
 export function addBuildGroup(body: { name: string }): Promise<number> {
   return window.UserDataModel.dispatch({
     type: "addBuildGroup",
@@ -120,7 +130,7 @@ export function getAllBuildGroups(): Promise<Array<BuildGroupSchema>> {
 }
 
 export function getBuildGroupsWhere(
-  conditions: any
+  conditions: QueryWhereConditions
 ): Promise<Array<BuildGroupSchema>> {
   return window.UserDataModel.dispatch({
     type: "getBuildGroupsWhere",
@@ -128,41 +138,35 @@ export function getBuildGroupsWhere(
   });
 }
 
-export function getBuildsWhere(conditions: any): Promise<Array<BuildSchema>> {
+export function getBuildsWhere(
+  conditions: QueryWhereConditions
+): Promise<Array<BuildSchema>> {
   return window.UserDataModel.dispatch({
     type: "getBuildsWhere",
     body: conditions,
   });
 }
 
-export function getEdgesWhere(conditions: any): Promise<Array<EdgeSchema>> {
+export function getEdgesWhere(
+  conditions: QueryWhereConditions
+): Promise<Array<EdgeSchema>> {
   return window.UserDataModel.dispatch({
     type: "getEdgesWhere",
     body: conditions,
   });
 }
 
-/** @deprecated */
-export function getAllBuildComponentsOfType(
-  dataStoreName: BuildComponentStoreName
-) {
-  return window.UserDataModel.dispatch({
-    type: "getAllBuildComponentsOfType",
-    body: {
-      dataStoreName,
-    },
-  });
-}
-
 export function getComponentsWhere<T extends BuildComponentStoreName>(
   tableName: T,
-  conditions: any
+  conditions: QueryWhereConditions,
+  orderBy?: QueryOrderBy
 ): Promise<Array<Schema<T>>> {
   return window.UserDataModel.dispatch({
     type: "getComponentsWhere",
     body: {
       tableName,
       conditions,
+      orderBy,
     },
   });
 }

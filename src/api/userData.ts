@@ -9,8 +9,15 @@ interface IpcAction {
 }
 
 interface IRow {
-  [key: string]: string | number | null;
+  [key: string]: string | number | string[] | number[] | null;
 }
+
+interface IOrderByColumn {
+  columnName: string;
+  direction: string;
+}
+
+type IOrderBy = Array<IOrderByColumn>;
 
 function snakeCaseToCamelCase(str: string) {
   return str.replace(/(_\w)/g, (m) => m[1].toUpperCase());
@@ -43,6 +50,26 @@ function addWhereClauses(query: KnexNamespace.QueryBuilder, conditions: IRow) {
   }
 
   return query;
+}
+
+function isValidOrderBy(rawOrderBy: unknown): rawOrderBy is IOrderBy {
+  if (!Array.isArray(rawOrderBy)) {
+    return false;
+  }
+
+  if (
+    !rawOrderBy.every(
+      (orderBy) =>
+        orderBy !== null &&
+        typeof orderBy === "object" &&
+        "columnName" in orderBy &&
+        "direction" in orderBy
+    )
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 const OutputRowMapper = {
@@ -119,16 +146,6 @@ export class UserDataModel {
 
   // Add new methods here, no other boilerplate in main / preload needed
 
-  /** @deprecated */
-  async getAllBuildComponentsOfType({ dataStoreName }: IpcAction["body"]) {
-    const db = await connectTo(DatabaseName.USER_DATA);
-    // TODO enforce that dataStoreName is one of the component tables only
-    const tableName = camelCaseToSnakeCase(dataStoreName);
-
-    const rows = await db(tableName).select("*");
-    return rows.map(OutputRowMapper.generic);
-  }
-
   async addBuildGroup({ name }: IpcAction["body"]) {
     const db = await connectTo(DatabaseName.USER_DATA);
     const [newRow] = await db("build_group").insert({ name }).returning("id");
@@ -181,6 +198,7 @@ export class UserDataModel {
   async getComponentsWhere({
     tableName: rawTableName,
     conditions: rawConditions,
+    orderBy: rawOrderBy,
   }: IpcAction["body"]) {
     const tableName = camelCaseToSnakeCase(rawTableName);
 
@@ -205,6 +223,19 @@ export class UserDataModel {
 
     let query = db(tableName);
     query = addWhereClauses(query, conditions);
+
+    if (rawOrderBy) {
+      if (!isValidOrderBy(rawOrderBy)) {
+        throw new Error(`Invalid orderBy on "${tableName}"`);
+      }
+
+      const orderBy = rawOrderBy.map(({ columnName, direction }) => ({
+        column: camelCaseToSnakeCase(columnName),
+        order: direction,
+      }));
+
+      query = query.orderBy(orderBy);
+    }
 
     const rows = await query.select("*");
 

@@ -6,7 +6,7 @@ import { Form } from "components/Form";
 import { Modal, ModalVariant } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
-import { useLiveQuery } from "hooks/useLiveQuery";
+import { useComponents } from "hooks/useComponents";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
@@ -15,6 +15,7 @@ import {
   overallCompatibility,
 } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
+import { SortDirection } from "lib/constants";
 import { db, Schema } from "lib/db";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
@@ -263,6 +264,15 @@ interface RowState<T extends BuildComponentStoreName> {
   incompatibleRows: Array<Schema<T>>;
 }
 
+const InitialRowState = {
+  allRows: [],
+  columns: [],
+  selectedRow: undefined,
+  selectedRowIsCompatible: true,
+  unselectedRows: [],
+  incompatibleRows: [],
+};
+
 export const ComparisonTable = <T extends BuildComponentStoreName>(
   props: ComparisonTableProps<T>
 ) => {
@@ -278,7 +288,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const { build } = useContext(BuildContext);
 
   const [sortBy, setSortBy] = useState<
-    Array<{ columnName: string; direction: "asc" | "desc" }>
+    Array<{ columnName: string; direction: SortDirection }>
   >([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -287,6 +297,14 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const [isLoading, setIsLoading] = useState(false);
 
   const dataStoreLabel = BuildComponentMeta[dataStoreName].pluralName;
+
+  const {
+    components: sortedRowsOfType,
+    isFetching,
+    isPending,
+  } = useComponents(dataStoreName, sortBy);
+
+  const [rowState, setRowState] = useState<RowState<T>>(InitialRowState);
 
   // Tie all of this state to the data query so the table can be reactive to dataStoreName updates
   // without e.g. columns changing before new rows have been fetched
@@ -297,64 +315,62 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     selectedRowIsCompatible,
     unselectedRows,
     incompatibleRows,
-  } = useLiveQuery<RowState<T>, RowState<T>>(
-    async () => {
-      const componentMeta = BuildComponentMeta[dataStoreName];
+  } = rowState;
 
-      const getIsBuildCompatible = (
-        row: Schema<T>,
-        build: ExtendedBuildSchema
-      ) => {
-        return (
-          overallCompatibility(
-            componentMeta.getCompatibilityChecks(row, build)
-          ) !== Compatibility.INCOMPATIBLE
-        );
-      };
-
-      const columns = componentMeta.columns;
-      const rows = await db.table(dataStoreName).toArray();
-      // Dexie doesn't support multi-column sorting
-      const allRows = sortByMultiple(rows, sortBy);
-
-      let selectedRow: Schema<T> | undefined,
-        unselectedRows: Array<Schema<T>> = [],
-        incompatibleRows: Array<Schema<T>> = [];
-
-      for (const row of allRows) {
-        if (row.id === selectedRowId) {
-          selectedRow = row;
-        } else if (!build || getIsBuildCompatible(row, build)) {
-          unselectedRows.push(row);
-        } else {
-          incompatibleRows.push(row);
-        }
-      }
-
-      const selectedRowIsCompatible =
-        selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
-
-      setIsLoading(false);
-
-      return {
-        allRows,
-        columns,
-        selectedRow,
-        selectedRowIsCompatible,
-        unselectedRows,
-        incompatibleRows,
-      };
-    },
-    [dataStoreName, sortBy, selectedRowId, build],
-    {
-      allRows: [],
-      columns: [],
-      selectedRow: undefined,
-      selectedRowIsCompatible: true,
-      unselectedRows: [],
-      incompatibleRows: [],
+  useEffect(() => {
+    if (isPending) {
+      return;
     }
-  );
+
+    if (isFetching) {
+      return;
+    }
+
+    const componentMeta = BuildComponentMeta[dataStoreName];
+
+    const getIsBuildCompatible = (
+      row: Schema<T>,
+      build: ExtendedBuildSchema
+    ) => {
+      return (
+        overallCompatibility(
+          componentMeta.getCompatibilityChecks(row, build)
+        ) !== Compatibility.INCOMPATIBLE
+      );
+    };
+
+    const columns = componentMeta.columns;
+
+    const allRows = [...sortedRowsOfType];
+
+    let selectedRow: Schema<T> | undefined,
+      unselectedRows: Array<Schema<T>> = [],
+      incompatibleRows: Array<Schema<T>> = [];
+
+    for (const row of allRows) {
+      if (row.id === selectedRowId) {
+        selectedRow = row;
+      } else if (!build || getIsBuildCompatible(row, build)) {
+        unselectedRows.push(row);
+      } else {
+        incompatibleRows.push(row);
+      }
+    }
+
+    const selectedRowIsCompatible =
+      selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
+
+    setIsLoading(false);
+
+    setRowState({
+      allRows,
+      columns,
+      selectedRow,
+      selectedRowIsCompatible,
+      unselectedRows,
+      incompatibleRows,
+    });
+  }, [isPending, isFetching, selectedRowId, build]);
 
   const handleEdit = (row: Schema<T>, editingSelected = false) => {
     setEditModalOpen(true);
