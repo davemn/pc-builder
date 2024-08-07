@@ -92,7 +92,7 @@ export function useBuildMutations(): {
   const { mutateAsync: deleteBuild } = useMutation({
     mutationFn: Query.deleteBuild,
     /* First argument is return value of mutation fn, second is the argument(s) to the mutation fn */
-    onSuccess: (_, buildId) => {
+    onSuccess: (_, { id: buildId }) => {
       queryClient.removeQueries({ queryKey: [QueryKey.BUILD, buildId] });
       // Need to refetch build groups since the deleted build was removed from one
       queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
