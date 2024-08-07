@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { BuildComponentStoreName } from "lib/build";
 import { Schema } from "lib/db";
@@ -36,5 +36,31 @@ export function useComponents<T extends BuildComponentStoreName>(
     isError,
     isFetching,
     isPending,
+  };
+}
+
+export function useComponentMutations(): {
+  createComponent: typeof Query.createComponent;
+  updateComponent: typeof Query.updateComponent;
+} {
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: createComponent } = useMutation({
+    mutationFn: Query.createComponent,
+    onSuccess: (_, { componentType }) => {
+      queryClient.invalidateQueries({ queryKey: [componentType] });
+    },
+  });
+
+  const { mutateAsync: updateComponent } = useMutation({
+    mutationFn: Query.updateComponent,
+    onSuccess: (_, { componentType }) => {
+      queryClient.invalidateQueries({ queryKey: [componentType] });
+    },
+  });
+
+  return {
+    createComponent,
+    updateComponent,
   };
 }

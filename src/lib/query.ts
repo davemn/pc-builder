@@ -115,6 +115,10 @@ export type QueryOrderBy = Array<{
   direction: SortDirection;
 }>;
 
+export interface QueryUnknownComponentSchema {
+  [key: string]: string | number | null;
+}
+
 export function addBuildGroup(body: { name: string }): Promise<number> {
   return window.UserDataModel.dispatch({
     type: "addBuildGroup",
@@ -184,6 +188,27 @@ export function createOrCopyBuild(body: {
 }): Promise<number> {
   return window.UserDataModel.dispatch({
     type: "createOrCopyBuild",
+    body,
+  });
+}
+
+export function createComponent(body: {
+  componentType: BuildComponentStoreName;
+  component: QueryUnknownComponentSchema;
+}): Promise<number> {
+  return window.UserDataModel.dispatch({
+    type: "createComponent",
+    body,
+  });
+}
+
+export function updateComponent(body: {
+  componentType: BuildComponentStoreName;
+  id: number;
+  changes: QueryUnknownComponentSchema;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "updateComponent",
     body,
   });
 }

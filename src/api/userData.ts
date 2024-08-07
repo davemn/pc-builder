@@ -119,6 +119,17 @@ const InputRowMapper = {
 };
 
 export class UserDataModel {
+  static readonly ComponentTableNames = [
+    "cpu",
+    "gpu",
+    "ram",
+    "m2_storage",
+    "sata_storage",
+    "psu",
+    "mobo",
+    "cooler",
+  ];
+
   static initMain() {
     if (!ipcMain || !app) {
       throw new Error("Only call initMain in the main process.");
@@ -202,18 +213,7 @@ export class UserDataModel {
   }: IpcAction["body"]) {
     const tableName = camelCaseToSnakeCase(rawTableName);
 
-    if (
-      ![
-        "cpu",
-        "gpu",
-        "ram",
-        "m2_storage",
-        "sata_storage",
-        "psu",
-        "mobo",
-        "cooler",
-      ].includes(tableName)
-    ) {
+    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
       throw new Error(`Invalid table name: "${tableName}"`);
     }
 
@@ -328,6 +328,46 @@ export class UserDataModel {
 
       return buildId;
     });
+  }
+
+  async createComponent({ componentType, component }: IpcAction["body"]) {
+    const tableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
+      throw new Error(`Invalid table name: "${tableName}"`);
+    }
+
+    if (typeof component !== "object" || component === null) {
+      throw new Error("Invalid component definition");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const values = InputRowMapper.generic(component);
+    const [newComponent] = await db(tableName).insert(values).returning("id");
+
+    return newComponent.id;
+  }
+
+  async updateComponent({ componentType, id, changes }: IpcAction["body"]) {
+    const tableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
+      throw new Error(`Invalid table name: "${tableName}"`);
+    }
+
+    if (typeof id !== "number" || id < 0) {
+      throw new Error("Invalid component ID");
+    }
+
+    if (typeof changes !== "object" || changes === null) {
+      throw new Error("Invalid updates");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const values = InputRowMapper.generic(changes);
+    await db(tableName).where({ id }).update(values);
   }
 }
 

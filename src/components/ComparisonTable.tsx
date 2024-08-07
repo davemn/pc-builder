@@ -6,7 +6,7 @@ import { Form } from "components/Form";
 import { Modal, ModalVariant } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
-import { useComponents } from "hooks/useComponents";
+import { useComponentMutations, useComponents } from "hooks/useComponents";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
@@ -16,7 +16,7 @@ import {
 } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
 import { SortDirection } from "lib/constants";
-import { db, Schema } from "lib/db";
+import { Schema } from "lib/db";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./ComparisonTable.module.css";
@@ -304,6 +304,8 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     isPending,
   } = useComponents(dataStoreName, sortBy);
 
+  const { createComponent, updateComponent } = useComponentMutations();
+
   const [rowState, setRowState] = useState<RowState<T>>(InitialRowState);
 
   // Tie all of this state to the data query so the table can be reactive to dataStoreName updates
@@ -545,7 +547,10 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 return;
               }
 
-              await db.table(dataStoreName).add(data);
+              await createComponent({
+                componentType: dataStoreName,
+                component: data,
+              });
 
               setAddModalOpen(false);
             }}
@@ -576,7 +581,11 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 return;
               }
 
-              await db.table(dataStoreName).update(editRow.id, data);
+              await updateComponent({
+                componentType: dataStoreName,
+                id: editRow.id,
+                changes: data,
+              });
 
               if (isEditingSelectedRow) {
                 onEditSelected(editRow, { ...editRow, ...data } as Schema<T>);
