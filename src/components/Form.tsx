@@ -1,8 +1,6 @@
 import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
-import { useLiveQuery } from "hooks/useLiveQuery";
-import { db } from "lib/db";
 
 import classNames from "./Form.module.css";
 
@@ -41,10 +39,14 @@ interface SelectProps {
 const StoredSelect = (props: SelectProps) => {
   const { tableName, label, multiple = false } = props;
 
-  const rows = useLiveQuery(
-    () => db.table(tableName).toCollection().sortBy("name"),
-    [tableName]
-  );
+  // const rows = useLiveQuery(
+  //   () => db.table(tableName).toCollection().sortBy("name"),
+  //   [tableName]
+  // );
+
+  // TODO if I end up bringing this back, where should valid values for a column
+  // come from? The unit definition? the column definition?
+  const rows: any[] = [];
 
   return (
     <div className={classNames.fieldContainer}>
