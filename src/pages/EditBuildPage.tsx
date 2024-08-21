@@ -5,6 +5,8 @@ import { Layout } from "components/Layout";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
 import { BuildContext, BuildProvider } from "context/build";
 import { BuildGroupContext, BuildGroupProvider } from "context/buildGroup";
+import { useBuildMutations } from "hooks/useBuild";
+import { useBuildGroupMutations } from "hooks/useBuildGroup";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
@@ -13,7 +15,7 @@ import {
   OrderedBuildComponentStoreNames,
   overallCompatibility,
 } from "lib/build";
-import { EdgeSchema, Schema, db } from "lib/db";
+import { Schema } from "lib/db";
 import { EditBuildPageProps } from "lib/page";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
@@ -127,6 +129,9 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
   const { buildGroup } = useContext(BuildGroupContext);
   const { build } = useContext(BuildContext);
 
+  const { updateBuildGroup } = useBuildGroupMutations();
+  const { updateBuild } = useBuildMutations();
+
   /* Sets the content pane */
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
@@ -150,34 +155,16 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
           >
             Back
           </Button>
-          <Button
-            key="reset"
-            onClick={async () => {
-              await db.transaction("rw", ["edges", "build"], async (tx) => {
-                // Remove all assigned edges from the build
-                await tx
-                  .table<EdgeSchema>("edges")
-                  .where({
-                    sourceId: build.id,
-                    sourceType: "build",
-                  })
-                  .delete();
-                // Reset price
-                await db.table("build").update(build.id, { price: 0 });
-              });
-            }}
-          >
-            Reset
-          </Button>
           <Div.LabelledControlInline>
             <label>Machine Name</label>
             <input
               type="text"
               name="name"
               onChange={async (e) => {
-                await db
-                  .table("buildGroup")
-                  .update(buildGroup.id, { name: e.target.value });
+                await updateBuildGroup({
+                  id: buildGroup.id,
+                  changes: { name: e.target.value },
+                });
               }}
               value={buildGroup?.name ?? ""}
             />
@@ -229,9 +216,10 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
               type="text"
               name="name"
               onChange={async (e) => {
-                await db
-                  .table("build")
-                  .update(build.id, { name: e.target.value });
+                await updateBuild({
+                  id: build.id,
+                  changes: { name: e.target.value },
+                });
               }}
               value={build?.name ?? ""}
             />

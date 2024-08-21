@@ -126,6 +126,16 @@ export function addBuildGroup(body: { name: string }): Promise<number> {
   });
 }
 
+export function updateBuildGroup(body: {
+  id: number;
+  changes: QueryUnknownComponentSchema;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "updateBuildGroup",
+    body,
+  });
+}
+
 export function getAllBuildGroups(): Promise<Array<BuildGroupSchema>> {
   return window.UserDataModel.dispatch({
     type: "getAllBuildGroups",

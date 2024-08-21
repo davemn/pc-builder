@@ -1,19 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { ExtendedBuildGroupSchema } from "lib/build";
 import { QueryKey } from "lib/constants";
 import * as Query from "lib/query";
 
 export function useBuildGroups() {
-  const queryClient = useQueryClient();
-
-  const { mutateAsync: addBuildGroup } = useMutation({
-    mutationFn: Query.addBuildGroup,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
-    },
-  });
-
   const {
     data: buildGroups,
     isLoading,
@@ -49,7 +40,6 @@ export function useBuildGroups() {
   });
 
   return {
-    addBuildGroup,
     buildGroups,
     isLoading,
     isError,

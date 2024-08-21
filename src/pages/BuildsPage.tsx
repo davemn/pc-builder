@@ -7,6 +7,7 @@ import {
   useBuildMutations,
   useExtendedBuild,
 } from "hooks/useBuild";
+import { useBuildGroupMutations } from "hooks/useBuildGroup";
 import { useBuildGroups } from "hooks/useBuildGroups";
 import {
   BuildComponentMeta,
@@ -246,7 +247,8 @@ const BuildGroup = (props: BuildGroupProps) => {
 
 export const BuildsPage = (props: BuildsPageProps) => {
   const { navigate } = props;
-  const { addBuildGroup, buildGroups } = useBuildGroups();
+  const { buildGroups } = useBuildGroups();
+  const { addBuildGroup } = useBuildGroupMutations();
 
   return (
     <Layout

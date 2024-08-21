@@ -163,6 +163,21 @@ export class UserDataModel {
     return newRow.id;
   }
 
+  async updateBuildGroup({ id, changes }: IpcAction["body"]) {
+    if (typeof id !== "number" || id < 0) {
+      throw new Error("Invalid group ID");
+    }
+
+    if (typeof changes !== "object" || changes === null) {
+      throw new Error("Invalid updates");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const values = InputRowMapper.generic(changes);
+    await db("build_group").where({ id }).update(values);
+  }
+
   async getAllBuildGroups() {
     const db = await connectTo(DatabaseName.USER_DATA);
     const rows = await db("build_group").select("*");
