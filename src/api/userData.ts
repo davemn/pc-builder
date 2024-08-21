@@ -330,6 +330,157 @@ export class UserDataModel {
     });
   }
 
+  async updateBuild({ id: buildId, changes }: IpcAction["body"]) {
+    if (typeof buildId !== "number" || buildId < 0) {
+      throw new Error("Invalid build ID");
+    }
+
+    if (typeof changes !== "object" || changes === null) {
+      throw new Error("Invalid updates");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const values = InputRowMapper.generic(changes);
+    await db("build").where({ id: buildId }).update(values);
+  }
+
+  async removeComponentFromBuild({ buildId, edgeId }: IpcAction["body"]) {
+    if (typeof buildId !== "number" || buildId < 0) {
+      throw new Error("Invalid build ID");
+    }
+
+    if (typeof edgeId !== "number" || edgeId < 0) {
+      throw new Error("Invalid edge ID");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    await db.transaction(async (tx) => {
+      const build = await tx("build").where({ id: buildId }).first();
+
+      if (!build) {
+        throw new Error("Build not found");
+      }
+
+      const componentEdge = await tx("edge")
+        .where({
+          source_id: buildId,
+          source_type: "build",
+          id: edgeId,
+        })
+        .first();
+
+      if (!componentEdge) {
+        throw new Error("Component not found");
+      }
+
+      const component = await tx(componentEdge.target_type)
+        .where({ id: componentEdge.target_id })
+        .first();
+
+      if (!component) {
+        throw new Error("Component not found");
+      }
+
+      await tx("edge")
+        .where({ source_id: buildId, source_type: "build", id: edgeId })
+        .del();
+
+      const price = build.price - component.price;
+      await tx("build").where({ id: buildId }).update({ price });
+    });
+  }
+
+  async assignComponentToBuild({
+    buildId,
+    edgeId,
+    componentId,
+    componentType,
+  }: IpcAction["body"]) {
+    if (typeof buildId !== "number" || buildId < 0) {
+      throw new Error("Invalid build ID");
+    }
+
+    if (typeof componentId !== "number" || componentId < 0) {
+      throw new Error("Invalid component ID");
+    }
+
+    if (typeof edgeId === "number") {
+      if (edgeId < 0) {
+        throw new Error("Invalid edge ID");
+      }
+    } else {
+      if (edgeId !== null) {
+        throw new Error("Invalid edge ID");
+      }
+    }
+
+    const componentTableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
+      throw new Error(`Invalid table name: "${componentTableName}"`);
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    return db.transaction(async (tx) => {
+      const build = await tx("build").where({ id: buildId }).first();
+
+      if (!build) {
+        throw new Error("Build not found");
+      }
+
+      const component = await tx(componentTableName)
+        .where({ id: componentId })
+        .first();
+
+      if (!component) {
+        throw new Error("Component not found");
+      }
+
+      let newEdgeId: number;
+      let prevComponent: IRow | null = null;
+
+      if (edgeId === null) {
+        // Creating a new edge
+        const [newEdge] = await tx("edge")
+          .insert({
+            source_id: buildId,
+            source_type: "build",
+            target_id: componentId,
+            target_type: componentTableName,
+          })
+          .returning("id");
+        newEdgeId = newEdge.id;
+      } else {
+        // Updating an existing edge to point to a different component
+        const prevComponentEdge = await tx("edge")
+          .where({ id: edgeId })
+          .first();
+        prevComponent = await tx(prevComponentEdge.target_type)
+          .where({ id: prevComponentEdge.target_id })
+          .first();
+
+        newEdgeId = edgeId;
+        await tx("edge").where({ id: edgeId }).update({
+          target_id: componentId,
+        });
+      }
+
+      // update build price
+      let price = build.price;
+      if (typeof prevComponent?.price === "number") {
+        price -= prevComponent.price;
+      }
+      price += component.price;
+
+      await tx("build").where({ id: buildId }).update({ price });
+
+      return newEdgeId;
+    });
+  }
+
   async createComponent({ componentType, component }: IpcAction["body"]) {
     const tableName = camelCaseToSnakeCase(componentType);
 

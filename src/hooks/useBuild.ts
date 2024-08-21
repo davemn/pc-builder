@@ -81,11 +81,12 @@ export function useAssignedComponents<T extends BuildComponentStoreName>(
 }
 
 export function useBuildMutations(): {
-  deleteBuild: (body: { id: number }) => Promise<void>;
-  createOrCopyBuild: (body: {
-    groupId: number;
-    buildIdToCopy?: number;
-  }) => Promise<number>;
+  deleteBuild: typeof Query.deleteBuild;
+  createOrCopyBuild: typeof Query.createOrCopyBuild;
+  /** Only changes fields on the build itself, does _not_ cause component assignments to refetch. */
+  updateBuild: typeof Query.updateBuild;
+  removeComponentFromBuild: typeof Query.removeComponentFromBuild;
+  assignComponentToBuild: typeof Query.assignComponentToBuild;
 } {
   const queryClient = useQueryClient();
 
@@ -101,7 +102,56 @@ export function useBuildMutations(): {
 
   const { mutateAsync: createOrCopyBuild } = useMutation({
     mutationFn: Query.createOrCopyBuild,
-    onSuccess: () => {
+    onSuccess: (_, { groupId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD_GROUP, groupId],
+      });
+    },
+  });
+
+  const { mutateAsync: updateBuild } = useMutation({
+    mutationFn: Query.updateBuild,
+    onSuccess: (_, { id: buildId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD, buildId],
+        exact: true,
+      });
+      // TODO refetch only the current build's group (and not all groups) after updating the build
+      // Needed because group queries include all builds in the group
+      queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
+    },
+  });
+
+  const { mutateAsync: removeComponentFromBuild } = useMutation({
+    mutationFn: Query.removeComponentFromBuild,
+    onSuccess: (_, { buildId, componentType }) => {
+      // Invalidate the build since the price has changed. Don't refetch all component assignments, just
+      // those for the specific component type that was removed from the build.
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD, buildId],
+        exact: true,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD, buildId, componentType],
+      });
+      // TODO refetch only the current build's group (and not all groups) after updating the build
+      queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
+    },
+  });
+
+  const { mutateAsync: assignComponentToBuild } = useMutation({
+    mutationFn: Query.assignComponentToBuild,
+    onSuccess: (_, { buildId, componentType }) => {
+      // Invalidate the build since the price has changed. Don't refetch all component assignments, just
+      // those for the specific component type that was assigned to the build.
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD, buildId],
+        exact: true,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKey.BUILD, buildId, componentType],
+      });
+      // TODO refetch only the current build's group (and not all groups) after updating the build
       queryClient.invalidateQueries({ queryKey: [QueryKey.BUILD_GROUP] });
     },
   });
@@ -109,6 +159,9 @@ export function useBuildMutations(): {
   return {
     deleteBuild,
     createOrCopyBuild,
+    updateBuild,
+    removeComponentFromBuild,
+    assignComponentToBuild,
   };
 }
 

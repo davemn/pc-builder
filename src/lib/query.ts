@@ -192,6 +192,39 @@ export function createOrCopyBuild(body: {
   });
 }
 
+export function updateBuild(body: {
+  id: number;
+  changes: QueryUnknownComponentSchema;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "updateBuild",
+    body,
+  });
+}
+
+export function removeComponentFromBuild(body: {
+  buildId: number;
+  edgeId: number;
+  componentType: BuildComponentStoreName;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "removeComponentFromBuild",
+    body,
+  });
+}
+
+export function assignComponentToBuild(body: {
+  buildId: number;
+  edgeId: number | null;
+  componentId: number;
+  componentType: BuildComponentStoreName;
+}): Promise<number> {
+  return window.UserDataModel.dispatch({
+    type: "assignComponentToBuild",
+    body,
+  });
+}
+
 export function createComponent(body: {
   componentType: BuildComponentStoreName;
   component: QueryUnknownComponentSchema;

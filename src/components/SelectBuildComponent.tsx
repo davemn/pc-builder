@@ -4,18 +4,12 @@ import {
   ComparisonTable,
   ComparisonTableProps,
 } from "components/ComparisonTable";
-import {
-  BuildComponentMeta,
-  BuildComponentStoreName,
-  Compatibility,
-  ExtendedBuildSchema,
-  overallCompatibility,
-} from "lib/build";
-import { EdgeSchema, Schema, db } from "lib/db";
+import { BuildContext } from "context/build";
+import { useBuildMutations } from "hooks/useBuild";
+import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./SelectBuildComponent.module.css";
-import { BuildContext } from "context/build";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
@@ -40,6 +34,9 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
 
   const { build } = useContext(BuildContext);
 
+  const { assignComponentToBuild, removeComponentFromBuild, updateBuild } =
+    useBuildMutations();
+
   const selectedBuildComponent = build?.components[componentType].find(
     (component) => component.edgeId === edgeId
   );
@@ -57,71 +54,43 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
         dataStoreName={componentType}
         onEditSelected={async (prevComponent, component) => {
           // update build price
-          await db.transaction("rw", ["build"], async (tx) => {
-            if (!build) {
-              throw new Error("Save failed: Build not found.");
-            }
-            let price = build.price;
-            price -= prevComponent.price;
-            price += component.price;
-            await tx.table("build").update(build.id, { price });
+          if (!build) {
+            throw new Error("Save failed: Build not found.");
+          }
+          let price = build.price;
+          price -= prevComponent.price;
+          price += component.price;
+          await updateBuild({
+            id: build.id,
+            changes: {
+              price,
+            },
           });
         }}
         onRemove={async (component) => {
-          await db.transaction("rw", ["edges", "build"], async (tx) => {
-            if (!build) {
-              throw new Error("Save failed: Build not found.");
-            }
-            await tx
-              .table("edges")
-              .where({
-                id: edgeId,
-              })
-              .delete();
+          if (!build) {
+            throw new Error("Save failed: Build not found.");
+          }
 
-            // update build price
-            const price = build.price - component.price;
-            await tx.table("build").update(build.id, { price });
+          await removeComponentFromBuild({
+            buildId: build.id,
+            edgeId: edgeId ?? -1,
+            componentType,
           });
 
           onRemove();
         }}
         onSelect={async (prevComponent, component) => {
-          const selectedEdgeId = await db.transaction(
-            "rw",
-            ["edges", "build"],
-            async (tx) => {
-              if (!build) {
-                throw new Error("Save failed: Build not found.");
-              }
+          if (!build) {
+            throw new Error("Save failed: Build not found.");
+          }
 
-              let newEdgeId: number;
-
-              if (edgeId === null) {
-                newEdgeId = await tx
-                  .table<Omit<EdgeSchema, "id">, number>("edges")
-                  .add({
-                    sourceId: build.id,
-                    sourceType: "build",
-                    targetId: component.id,
-                    targetType: componentType,
-                  });
-              } else {
-                newEdgeId = edgeId;
-                await tx.table("edges").update(edgeId, {
-                  targetId: component.id,
-                });
-              }
-
-              // update build price
-              let price = build.price;
-              price -= prevComponent?.price ?? 0;
-              price += component.price;
-              await tx.table("build").update(build.id, { price });
-
-              return newEdgeId;
-            }
-          );
+          const selectedEdgeId = await assignComponentToBuild({
+            buildId: build.id,
+            edgeId,
+            componentId: component.id,
+            componentType,
+          });
 
           onSelect(selectedEdgeId);
         }}
