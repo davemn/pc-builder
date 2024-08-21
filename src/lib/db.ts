@@ -1,8 +1,7 @@
 const DATABASE_NAME = "PCBuilder";
 
-// TODO "edges" should be "edge" to match the schema & database
 export type StoreName =
-  | "edges"
+  | "edge"
   | "build"
   | "buildGroup"
   | "cpu"
@@ -163,7 +162,7 @@ export interface CoolerSchema {
 }
 
 export type Schema<T extends StoreName> = {
-  edges: EdgeSchema;
+  edge: EdgeSchema;
   build: BuildSchema;
   buildGroup: BuildGroupSchema;
   cpu: CpuSchema;

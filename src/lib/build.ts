@@ -19,24 +19,13 @@ import {
 
 export type BuildComponentStoreName = Exclude<
   StoreName,
-  "edges" | "build" | "buildGroup"
+  "edge" | "build" | "buildGroup"
 >;
 
-/** Unused. */
 export type BuildComponentEdgeSchema = EdgeSchema<
   "build",
   BuildComponentStoreName
 >;
-
-/** Unused. */
-export function edgeIsBuildComponent(
-  edge: EdgeSchema
-): edge is BuildComponentEdgeSchema {
-  return (
-    edge.sourceType === "build" &&
-    !["edges", "build", "buildGroup"].includes(edge.targetType)
-  );
-}
 
 /** Pass to Array.filter() to get type narrowing on EdgeSchema, e.g. `edges.filter(edgeIsBuildComponentType(componentType))` */
 export const edgeIsBuildComponentType =
