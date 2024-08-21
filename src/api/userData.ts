@@ -680,4 +680,10 @@ export const migrations: Array<DatabaseMigration> = [
     },
     down: async (knex: KnexNamespace) => {},
   },
+  // TODO for future migration, other component types:
+  // case: "++id, brand, name, price, formFactor, frontUsbPorts, frontAudioPorts, driveBays, maxGpuLength, maxCpuCoolerHeight, maxPsuLength, maxRadiatorLength, maxRadiatorWidth, maxRadiatorHeight, maxFanLength, maxFanWidth, maxFanHeight, maxFanCount, maxDustFilterCount",
+  // nvmeCarrierCard: "++id, brand, name, price, type, pcieVersion, m2Slots",
+  // rgbLighting: "++id, brand, name, price, type, color, brightness",
+  // soundCard: "++id, brand, name, price, type, spdifOutputs, spdifInputs, line35mmOutputs, headphone35mmOutputs, microphone35mmInputs"
+  // monitor: "++id, brand, name, price, resolution, refreshRate, panelType, responseTime, aspectRatio, size, vesaMount, hdmiInputs, displayPortInputs, usbPorts, speakers, freesync, gsync, curved, color, brightness, contrast, viewingAngle, powerConsumption, weight, height, width, depth",
 ];
