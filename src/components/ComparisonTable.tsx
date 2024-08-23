@@ -17,6 +17,7 @@ import {
 import { ColumnDefinition } from "lib/columns";
 import { SortDirection } from "lib/constants";
 import { Schema } from "lib/db";
+import { RetailerByHostName, RetailerLabel } from "lib/retailer";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./ComparisonTable.module.css";
@@ -70,6 +71,7 @@ function sortByMultiple<T>(
 interface TableRowProps<T extends BuildComponentStoreName> {
   columns: Array<ColumnDefinition<T>>;
   compareToRow?: Schema<T>;
+  componentTypeSingularLabel: string;
   onEdit: (id: number) => void;
   onRemove?: (id: number) => void;
   onSelect?: (id: number) => void;
@@ -86,6 +88,7 @@ const TableRow = <T extends BuildComponentStoreName>(
   const {
     columns,
     compareToRow,
+    componentTypeSingularLabel,
     onEdit,
     onRemove,
     onSelect,
@@ -97,6 +100,7 @@ const TableRow = <T extends BuildComponentStoreName>(
   } = props;
 
   const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
+  const [addStoreLinkModalOpen, setAddStoreLinkModalOpen] = useState(false);
 
   const renderCellValue = (column: ColumnDefinition<T>) => {
     const value = row[column.name];
@@ -245,10 +249,71 @@ const TableRow = <T extends BuildComponentStoreName>(
               </Button>
             </Div.PriceModalHeadingContainer>
             <h1>{row.name}</h1>
-            <Button onClick={() => {}} variant={ButtonVariant.ACCENT}>
+            <Button
+              onClick={() => setAddStoreLinkModalOpen(true)}
+              variant={ButtonVariant.ACCENT}
+            >
               Add Store Link
             </Button>
+            <p className={classNames.priceModalPlaceholder}>
+              This {componentTypeSingularLabel} isn't linked to any current
+              store listing. Add a link above to start tracking its price. Add
+              multiple links to track the price of the same{" "}
+              {componentTypeSingularLabel} across several retailers.
+            </p>
           </Div.PriceModal>
+        </Modal>
+      )}
+      {addStoreLinkModalOpen && (
+        <Modal>
+          <h2 className={classNames.modalTitle}>Add Store Link</h2>
+          <p className={classNames.modalDescription}>
+            Find a <strong>{row.name}</strong> listing you like on a retailer's
+            website and paste the URL here.
+          </p>
+          <Form
+            schema={[
+              {
+                dataType: "text",
+                name: "link",
+                label: "Product Listing URL",
+              },
+              {
+                dataType: "text",
+                name: "name",
+                label: "Store Name",
+              },
+            ]}
+            onCancel={() => setAddStoreLinkModalOpen(false)}
+            onInputBlur={(fieldName, value, setField) => {
+              if (fieldName !== "link") {
+                return;
+              }
+
+              if (!value || typeof value !== "string") {
+                return;
+              }
+
+              try {
+                const url = new URL(value);
+                const retailer = RetailerByHostName[url.hostname];
+
+                if (retailer) {
+                  setField("name", RetailerLabel[retailer]);
+                } else {
+                  // If we don't recognize the retailer, just use the hostname
+                  setField("name", url.hostname);
+                }
+              } catch (e) {
+                return;
+              }
+            }}
+            onSubmit={(data) => {
+              // TODO actually save the link
+              console.log(data);
+              setAddStoreLinkModalOpen(false);
+            }}
+          />
         </Modal>
       )}
     </>
@@ -296,7 +361,10 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const [isEditingSelectedRow, setIsEditingSelectedRow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const dataStoreLabel = BuildComponentMeta[dataStoreName].pluralName;
+  const {
+    pluralName: componentTypePluralLabel,
+    singularName: componentTypeSingularLabel,
+  } = BuildComponentMeta[dataStoreName];
 
   const {
     components: sortedRowsOfType,
@@ -390,7 +458,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     return (
       <Div.Container>
         <Div.TableName>
-          <h2>{dataStoreLabel}</h2>
+          <h2>{componentTypePluralLabel}</h2>
           <Button disabled onClick={() => {}} variant={ButtonVariant.ACCENT}>
             Add
           </Button>
@@ -402,7 +470,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   return (
     <Div.Container>
       <Div.TableName>
-        <h2>{dataStoreLabel}</h2>
+        <h2>{componentTypePluralLabel}</h2>
         <Button
           onClick={() => setAddModalOpen(true)}
           variant={ButtonVariant.ACCENT}
@@ -437,6 +505,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             >
               <TableRow
                 columns={columns}
+                componentTypeSingularLabel={componentTypeSingularLabel}
                 onEdit={() => handleEdit(selectedRow, true)}
                 onRemove={() => onRemove(selectedRow)}
                 row={selectedRow}
@@ -469,6 +538,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               key={row.id}
               columns={columns}
               compareToRow={selectedRow}
+              componentTypeSingularLabel={componentTypeSingularLabel}
               onEdit={() => handleEdit(row)}
               onSelect={() => onSelect(selectedRow ?? null, row)}
               row={row}
@@ -487,8 +557,8 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               style={{ gridColumn: `1 / span ${columns.length + 2}` }}
             >
               {selectedRow
-                ? `No compatible ${dataStoreLabel} to compare`
-                : `No ${dataStoreLabel} compatible with build`}
+                ? `No compatible ${componentTypePluralLabel} to compare`
+                : `No ${componentTypePluralLabel} compatible with build`}
             </Div.EmptyState>
           )}
         </Div.Table>
@@ -498,7 +568,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       {incompatibleRows.length > 0 && (
         <>
           <h2 className={classNames.tableName}>
-            Incompatible {dataStoreLabel}
+            Incompatible {componentTypePluralLabel}
           </h2>
           <Div.ScrollContainer>
             <Div.Table
@@ -512,6 +582,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                   key={row.id}
                   columns={columns}
                   compareToRow={selectedRow}
+                  componentTypeSingularLabel={componentTypeSingularLabel}
                   onEdit={() => handleEdit(row)}
                   onSelect={() => onSelect(selectedRow ?? null, row)}
                   row={row}

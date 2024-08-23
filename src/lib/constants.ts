@@ -12,3 +12,19 @@ export enum QueryKey {
   BUILD = "build",
   BUILD_GROUP = "build_group",
 }
+
+// Intl locale regions
+export enum Region {
+  US = "us",
+  CA = "ca",
+  UK = "uk",
+  AU = "au",
+}
+
+// TODO other popular retailers, including non-US retailers
+export enum Retailer {
+  AMAZON = "amazon",
+  BESTBUY = "bestbuy",
+  BHPHOTO = "bhphoto",
+  NEWEGG = "newegg",
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 
@@ -8,6 +8,11 @@ interface FormProps {
   className?: string;
   initialData?: Record<string, number | string>;
   onCancel?: () => void;
+  onInputBlur?: (
+    name: string,
+    value: number | string,
+    setField: (name: string, value: number | string) => void
+  ) => void;
   onSubmit: (data: Record<string, any>) => void;
   schema: Array<{
     dataType: "text" | "numeric" | "currency";
@@ -76,6 +81,7 @@ export const Form = (props: FormProps) => {
     className: classNameProp,
     initialData,
     onCancel,
+    onInputBlur,
     onSubmit,
     schema,
   } = props;
@@ -115,6 +121,13 @@ export const Form = (props: FormProps) => {
     onSubmit(data);
   };
 
+  const setField = useCallback((name: string, value: number | string) => {
+    setData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  }, []);
+
   return (
     <form
       className={[classNames.form, classNameProp].join(" ")}
@@ -128,6 +141,9 @@ export const Form = (props: FormProps) => {
               <input
                 type="text"
                 name={field.name}
+                onBlur={() => {
+                  onInputBlur?.(field.name, data[field.name], setField);
+                }}
                 onChange={(e) => {
                   const value = e.currentTarget.value;
                   setData((prevData) => ({
@@ -149,6 +165,9 @@ export const Form = (props: FormProps) => {
               <input
                 type="number"
                 name={field.name}
+                onBlur={() => {
+                  onInputBlur?.(field.name, data[field.name], setField);
+                }}
                 onChange={(e) => {
                   let value = parseFloat(e.currentTarget.value);
                   if (isNaN(value)) {

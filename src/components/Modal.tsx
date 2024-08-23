@@ -21,15 +21,16 @@ interface ModalProps {
 export const Modal = (props: ModalProps) => {
   const { children, variant = ModalVariant.DEFAULT } = props;
 
-  const { getModalRootElem, setIsModalOpen } = useContext(ModalContext);
+  const { getModalRootElem, decrementOpenModalCount, incrementOpenModalCount } =
+    useContext(ModalContext);
 
   useEffect(() => {
-    setIsModalOpen(true);
+    incrementOpenModalCount();
 
     return () => {
-      setIsModalOpen(false);
+      decrementOpenModalCount();
     };
-  }, [setIsModalOpen]);
+  }, []);
 
   return createPortal(
     <Div.ModalOverlay>

@@ -1,15 +1,19 @@
-import { createContext, useRef, useState } from "react";
+import { createContext, useCallback, useRef, useState } from "react";
 
 interface ModalContextValue {
   getModalRootElem: () => HTMLDivElement | null;
+  decrementOpenModalCount: () => void;
+  incrementOpenModalCount: () => void;
   isModalOpen: boolean;
-  setIsModalOpen: (isOpen: boolean) => void;
+  openModalCount: number;
 }
 
 export const ModalContext = createContext<ModalContextValue>({
   getModalRootElem: () => null,
+  decrementOpenModalCount: () => {},
+  incrementOpenModalCount: () => {},
   isModalOpen: false,
-  setIsModalOpen: () => {},
+  openModalCount: 0,
 });
 
 interface ModalProviderProps {
@@ -23,11 +27,27 @@ export const ModalProvider = (props: ModalProviderProps) => {
   const modalRootRef = useRef<HTMLDivElement>(null);
   const getModalRootElem = () => modalRootRef.current;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openModalCount, setOpenModalCount] = useState(0);
+
+  const incrementOpenModalCount = useCallback(() => {
+    setOpenModalCount((count) => count + 1);
+  }, []);
+
+  const decrementOpenModalCount = useCallback(() => {
+    setOpenModalCount((count) => count - 1);
+  }, []);
+
+  const isModalOpen = openModalCount > 0;
 
   return (
     <ModalContext.Provider
-      value={{ getModalRootElem, isModalOpen, setIsModalOpen }}
+      value={{
+        getModalRootElem,
+        decrementOpenModalCount,
+        incrementOpenModalCount,
+        isModalOpen,
+        openModalCount,
+      }}
     >
       {children}
       <div key="modal-root" ref={modalRootRef} />
