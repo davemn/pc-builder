@@ -535,6 +535,86 @@ export class UserDataModel {
     const values = InputRowMapper.generic(changes);
     await db(tableName).where({ id }).update(values);
   }
+
+  async getComponentRetailerLinks({
+    componentType,
+    componentId,
+  }: IpcAction["body"]) {
+    const componentTableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
+      throw new Error(`Invalid table name: "${componentTableName}"`);
+    }
+
+    if (typeof componentId !== "number" || componentId < 0) {
+      throw new Error("Invalid component ID");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const edges = await db("edge")
+      .where({
+        source_id: componentId,
+        source_type: componentTableName,
+        target_type: "retailer_product_link",
+      })
+      .select("target_id");
+
+    const linkRows = await db("retailer_product_link")
+      .where(
+        "id",
+        "in",
+        edges.map((edge) => edge.target_id)
+      )
+      .select("*");
+
+    return linkRows.map(OutputRowMapper.generic);
+  }
+
+  async addRetailerLinkToComponent({
+    componentType,
+    componentId,
+    retailerName,
+    url,
+  }: IpcAction["body"]) {
+    const componentTableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
+      throw new Error(`Invalid table name: "${componentTableName}"`);
+    }
+
+    if (typeof componentId !== "number" || componentId < 0) {
+      throw new Error("Invalid component ID");
+    }
+
+    if (typeof retailerName !== "string" || !retailerName) {
+      throw new Error("Link name required");
+    }
+
+    if (typeof url !== "string" || !url) {
+      throw new Error("Link URL required");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    return db.transaction(async (tx) => {
+      let linkId: number;
+      const [newLink] = await tx("retailer_product_link")
+        .insert({ retailer_name: retailerName, url })
+        .returning("id");
+
+      linkId = newLink.id;
+
+      await tx("edge").insert({
+        source_id: componentId,
+        source_type: componentTableName,
+        target_id: linkId,
+        target_type: "retailer_product_link",
+      });
+
+      return linkId;
+    });
+  }
 }
 
 export const migrations: Array<DatabaseMigration> = [
@@ -676,6 +756,18 @@ export const migrations: Array<DatabaseMigration> = [
         table.integer("fan_diameter").notNullable();
         table.integer("cooling_watts").notNullable();
         table.json("compatibility").notNullable().defaultTo("[]");
+      });
+    },
+    down: async (knex: KnexNamespace) => {},
+  },
+  {
+    name: "add_price_history",
+    up: async (knex: KnexNamespace) => {
+      await knex.schema.createTable("retailer_product_link", (table) => {
+        table.increments("id").primary();
+        table.string("retailer_name").notNullable();
+        table.string("url").notNullable();
+        table.json("price_history").notNullable().defaultTo("[]");
       });
     },
     down: async (knex: KnexNamespace) => {},

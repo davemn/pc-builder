@@ -1,6 +1,12 @@
 import { BuildComponentStoreName } from "lib/build";
 import { SortDirection } from "lib/constants";
-import { BuildGroupSchema, BuildSchema, EdgeSchema, Schema } from "lib/db";
+import {
+  BuildGroupSchema,
+  BuildSchema,
+  EdgeSchema,
+  RetailerProductLinkSchema,
+  Schema,
+} from "lib/db";
 
 export interface QueryWhereConditions {
   [key: string]: string | number | string[] | number[] | null;
@@ -148,6 +154,28 @@ export function updateComponent(body: {
 }): Promise<void> {
   return window.UserDataModel.dispatch({
     type: "updateComponent",
+    body,
+  });
+}
+
+export function getComponentRetailerLinks(body: {
+  componentType: BuildComponentStoreName;
+  componentId: number;
+}): Promise<Array<RetailerProductLinkSchema>> {
+  return window.UserDataModel.dispatch({
+    type: "getComponentRetailerLinks",
+    body,
+  });
+}
+
+export function addRetailerLinkToComponent(body: {
+  componentType: BuildComponentStoreName;
+  componentId: number;
+  retailerName: string;
+  url: string;
+}): Promise<number> {
+  return window.UserDataModel.dispatch({
+    type: "addRetailerLinkToComponent",
     body,
   });
 }

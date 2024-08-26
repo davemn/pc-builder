@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { BuildComponentStoreName } from "lib/build";
+import { QueryKey } from "lib/constants";
 import { Schema } from "lib/db";
 import * as Query from "lib/query";
 
+// TODO instead of requesting every component of a type, useComponents() should return a list of IDs,
+// then each table row should fetch a single component via useComponent(id). That way I can invalidate
+// each individually.
 export function useComponents<T extends BuildComponentStoreName>(
   componentType: T,
   orderBy?: Query.QueryOrderBy
@@ -42,6 +46,7 @@ export function useComponents<T extends BuildComponentStoreName>(
 export function useComponentMutations(): {
   createComponent: typeof Query.createComponent;
   updateComponent: typeof Query.updateComponent;
+  addRetailerLinkToComponent: typeof Query.addRetailerLinkToComponent;
 } {
   const queryClient = useQueryClient();
 
@@ -59,8 +64,18 @@ export function useComponentMutations(): {
     },
   });
 
+  const { mutateAsync: addRetailerLinkToComponent } = useMutation({
+    mutationFn: Query.addRetailerLinkToComponent,
+    onSuccess: (_, { componentType, componentId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [componentType, componentId, QueryKey.RETAILER_LINK],
+      });
+    },
+  });
+
   return {
     createComponent,
     updateComponent,
+    addRetailerLinkToComponent,
   };
 }

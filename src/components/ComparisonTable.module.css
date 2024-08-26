@@ -181,3 +181,9 @@
   color: var(--light90);
   text-align: center;
 }
+
+.priceModalRetailerHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

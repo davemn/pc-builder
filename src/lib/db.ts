@@ -11,7 +11,8 @@ export type StoreName =
   | "sataStorage"
   | "psu"
   | "mobo"
-  | "cooler";
+  | "cooler"
+  | "retailerProductLink";
 
 export interface EdgeSchema<
   T extends StoreName = StoreName,
@@ -161,6 +162,13 @@ export interface CoolerSchema {
   // TODO split size into separate dimensions
 }
 
+export interface RetailerProductLinkSchema {
+  id: number;
+  retailerName: string;
+  url: string;
+  priceHistory: Array<{ price: number; date: number }>;
+}
+
 export type Schema<T extends StoreName> = {
   edge: EdgeSchema;
   build: BuildSchema;
@@ -173,4 +181,5 @@ export type Schema<T extends StoreName> = {
   psu: PsuSchema;
   mobo: MoboSchema;
   cooler: CoolerSchema;
+  retailerProductLink: RetailerProductLinkSchema;
 }[T];

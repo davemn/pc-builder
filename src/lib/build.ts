@@ -19,7 +19,7 @@ import {
 
 export type BuildComponentStoreName = Exclude<
   StoreName,
-  "edge" | "build" | "buildGroup"
+  "edge" | "build" | "buildGroup" | "retailerProductLink"
 >;
 
 export type BuildComponentEdgeSchema = EdgeSchema<
