@@ -1,0 +1,13 @@
+.inputContainer {
+  display: flex;
+  gap: 10px;
+}
+
+.variantDefault {
+  flex-direction: column;
+}
+
+.variantInline {
+  flex-direction: row;
+  align-items: center;
+}

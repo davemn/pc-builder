@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 
 import { Button, ButtonSize, ButtonVariant } from "components/Button";
+import { Input, InputVariant } from "components/Input";
 import { Layout } from "components/Layout";
 import { SelectBuildComponent } from "components/SelectBuildComponent";
 import { BuildContext, BuildProvider } from "context/build";
@@ -155,20 +156,19 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
           >
             Back
           </Button>
-          <Div.LabelledControlInline>
-            <label>Machine Name</label>
-            <input
-              type="text"
-              name="name"
-              onChange={async (e) => {
-                await updateBuildGroup({
-                  id: buildGroup.id,
-                  changes: { name: e.target.value },
-                });
-              }}
-              value={buildGroup?.name ?? ""}
-            />
-          </Div.LabelledControlInline>
+          <Input
+            labelText="Machine Name"
+            type="text"
+            name="name"
+            onChange={async (e) => {
+              await updateBuildGroup({
+                id: buildGroup.id,
+                changes: { name: e.target.value },
+              });
+            }}
+            value={buildGroup?.name ?? ""}
+            variant={InputVariant.INLINE}
+          />
           <Div.LabelledControlInline>
             <h2>Build Price</h2>
             {build && (
@@ -210,20 +210,19 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
       sidebar={
         <>
           {/* Build Name */}
-          <Div.LabelledControl key="name">
-            <label>Build Name</label>
-            <input
-              type="text"
-              name="name"
-              onChange={async (e) => {
-                await updateBuild({
-                  id: build.id,
-                  changes: { name: e.target.value },
-                });
-              }}
-              value={build?.name ?? ""}
-            />
-          </Div.LabelledControl>
+          <Input
+            key="name"
+            labelText="Build Name"
+            type="text"
+            name="name"
+            onChange={async (e) => {
+              await updateBuild({
+                id: build.id,
+                changes: { name: e.target.value },
+              });
+            }}
+            value={build?.name ?? ""}
+          />
           {/* Build Components */}
           {OrderedBuildComponentStoreNames.map((componentType) => (
             <BuildComponentSlot
