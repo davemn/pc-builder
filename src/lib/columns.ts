@@ -1,6 +1,43 @@
 import { BuildComponentStoreName } from "lib/build";
 import { Schema } from "lib/db";
 
+/**
+ * Sort an array by 1+ columns. Prefer using the database for handling sorting when possible.
+ */
+export function sortByMultiple<T>(
+  data: Array<T>,
+  sortBy: Array<{
+    columnName: Extract<keyof T, string>;
+    direction: "asc" | "desc";
+  }>
+) {
+  if (sortBy.length === 0) {
+    return [...data];
+  }
+
+  return [...data].sort((a, b) => {
+    let i = 0;
+    let curSort;
+
+    while (i < sortBy.length) {
+      curSort = sortBy[i];
+
+      const aValue = a[curSort.columnName];
+      const bValue = b[curSort.columnName];
+
+      if (aValue < bValue) {
+        return curSort.direction === "asc" ? -1 : 1;
+      } else if (aValue > bValue) {
+        return curSort.direction === "asc" ? 1 : -1;
+      }
+
+      i++;
+    }
+
+    return 0;
+  });
+}
+
 const QualityFn = {
   LESS_IS_BETTER: (a: number, b: number) => Math.sign(b - a),
   MORE_IS_BETTER: (a: number, b: number) => Math.sign(a - b),

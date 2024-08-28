@@ -3,7 +3,7 @@ import { useContext } from "react";
 import {
   ComparisonTable,
   ComparisonTableProps,
-} from "components/ComparisonTable";
+} from "components/ComparisonTable/ComparisonTable";
 import { BuildContext } from "context/build";
 import { useBuildMutations } from "hooks/useBuild";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
