@@ -1,0 +1,64 @@
+.linkContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.linkHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.linkHeading > h2 {
+  margin-right: auto;
+  color: var(--light100);
+}
+
+.linkHeading > .copyLinkButton {
+  margin: 0 20px;
+}
+
+.linkHistoryContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 10px;
+}
+
+.linkHistory {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  color: var(--light90);
+}
+
+.linkHistory > :last-child {
+  margin-left: auto;
+}
+
+.priceInput {
+  max-width: 130px;
+  text-align: right;
+}
+
+input.priceInput::-webkit-outer-spin-button,
+input.priceInput::-webkit-inner-spin-button {
+  display: none;
+}
+
+.priceChangeNeutral {
+  color: var(--light90);
+}
+
+.priceChangePositive {
+  color: var(--positive100);
+}
+
+.priceChangeNegative {
+  color: var(--negative100);
+}

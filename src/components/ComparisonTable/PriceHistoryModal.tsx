@@ -1,4 +1,3 @@
-import { HeartIcon, LinkIcon, PencilIcon } from "@primer/octicons-react";
 import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
@@ -7,56 +6,15 @@ import { Modal, ModalVariant } from "components/Modal";
 import { useComponentMutations } from "hooks/useComponents";
 import { useRetailerLinks } from "hooks/useRetailerLinks";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { RetailerProductLinkSchema, Schema } from "lib/db";
+import { Schema } from "lib/db";
 import { RetailerByHostName, RetailerLabel } from "lib/retailer";
 import { makeClassNamePrimitives } from "lib/styles";
+
+import { RetailerLinkWithHistory } from "./RetailerLinkWithHistory";
 
 import classNames from "./PriceHistoryModal.module.css";
 
 const { Div } = makeClassNamePrimitives(classNames);
-
-interface RetailerLinkWithHistoryProps {
-  link: RetailerProductLinkSchema;
-}
-
-const RetailerLinkWithHistory = (props: RetailerLinkWithHistoryProps) => {
-  const { link } = props;
-
-  return (
-    <Div.RetailerLinkContainer>
-      <Div.RetailerLinkHeading key={link.id}>
-        <h2>{link.retailerName}</h2>
-        <Button
-          className={classNames.copyLinkButton}
-          onClick={async () => {
-            await navigator.clipboard.writeText(link.url);
-          }}
-          variant={ButtonVariant.INLINE}
-        >
-          <LinkIcon /> Copy
-        </Button>
-        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
-          <HeartIcon size={24} />
-        </Button>
-        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
-          <PencilIcon size={24} />
-        </Button>
-      </Div.RetailerLinkHeading>
-      <Div.RetailerLinkHistoryContainer>
-        <Div.RetailerLinkHistory>
-          <h3>May 6</h3>
-          <span>Today</span>
-          <span>$1200</span>
-        </Div.RetailerLinkHistory>
-        <Div.RetailerLinkHistory>
-          <h3>May 5</h3>
-          <span>Sunday</span>
-          <span>$1280</span>
-        </Div.RetailerLinkHistory>
-      </Div.RetailerLinkHistoryContainer>
-    </Div.RetailerLinkContainer>
-  );
-};
 
 export interface PriceHistoryModalProps<T extends BuildComponentStoreName> {
   componentType: T;

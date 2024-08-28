@@ -32,49 +32,6 @@
   text-align: center;
 }
 
-.retailerLinkContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.retailerLinkHeading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-}
-
-.retailerLinkHeading > h2 {
-  margin-right: auto;
-  color: var(--light100);
-}
-
-.retailerLinkHeading > .copyLinkButton {
-  margin: 0 20px;
-}
-
-.retailerLinkHistoryContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0 10px;
-}
-
-.retailerLinkHistory {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 20px;
-  color: var(--light90);
-}
-
-.retailerLinkHistory > :last-child {
-  margin-left: auto;
-}
-
 .addLinkModalTitle {
   font-size: var(--fontSizeTitle);
   margin-bottom: 20px;

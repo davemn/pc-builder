@@ -93,6 +93,23 @@ const OutputRowMapper = {
 
     return outputRow;
   },
+  retailerLinks: (row: IRow) => {
+    const outputRow: IRow = OutputRowMapper.generic(row);
+
+    if (
+      "priceHistory" in outputRow &&
+      typeof outputRow.priceHistory === "string"
+    ) {
+      try {
+        outputRow.priceHistory = JSON.parse(outputRow.priceHistory);
+      } catch (e) {
+        console.error("Error parsing price history JSON", e);
+        outputRow.priceHistory = [];
+      }
+    }
+
+    return outputRow;
+  },
 };
 
 const InputRowMapper = {
@@ -568,7 +585,7 @@ export class UserDataModel {
       )
       .select("*");
 
-    return linkRows.map(OutputRowMapper.generic);
+    return linkRows.map(OutputRowMapper.retailerLinks);
   }
 
   async addRetailerLinkToComponent({
