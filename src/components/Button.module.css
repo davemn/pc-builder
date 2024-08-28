@@ -56,3 +56,16 @@
   border-color: var(--negative100);
   color: var(--negative100);
 }
+
+.variantInline {
+  border: none;
+  color: var(--light90);
+  padding: 0;
+}
+
+.variantInlineActive,
+.variantInline:active {
+  border: none;
+  color: var(--light100);
+  padding: 0;
+}

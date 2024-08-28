@@ -11,6 +11,8 @@ export enum ButtonVariant {
   DEFAULT_ACTIVE,
   NEGATIVE,
   NEGATIVE_ACTIVE,
+  INLINE,
+  INLINE_ACTIVE,
 }
 
 export enum ButtonSize {
@@ -59,7 +61,9 @@ export const Button = (props: ButtonProps) => {
         variant === ButtonVariant.ACCENT && "variantAccent",
         variant === ButtonVariant.ACCENT_ACTIVE && "variantAccentActive",
         variant === ButtonVariant.NEGATIVE && "variantNegative",
-        variant === ButtonVariant.NEGATIVE_ACTIVE && "variantNegativeActive"
+        variant === ButtonVariant.NEGATIVE_ACTIVE && "variantNegativeActive",
+        variant === ButtonVariant.INLINE && "variantInline",
+        variant === ButtonVariant.INLINE_ACTIVE && "variantInlineActive"
       )} ${classNameProp ?? ""}`}
       disabled={disabled}
       onClick={onClick}

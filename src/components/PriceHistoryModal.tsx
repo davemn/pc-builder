@@ -1,4 +1,4 @@
-import { LinkIcon } from "@primer/octicons-react";
+import { HeartIcon, LinkIcon, PencilIcon } from "@primer/octicons-react";
 import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
@@ -11,9 +11,52 @@ import { RetailerProductLinkSchema, Schema } from "lib/db";
 import { RetailerByHostName, RetailerLabel } from "lib/retailer";
 import { makeClassNamePrimitives } from "lib/styles";
 
-import classNames from "./ComparisonTable.module.css";
+import classNames from "./PriceHistoryModal.module.css";
 
-const { Div, Span } = makeClassNamePrimitives(classNames);
+const { Div } = makeClassNamePrimitives(classNames);
+
+interface RetailerLinkWithHistoryProps {
+  link: RetailerProductLinkSchema;
+}
+
+const RetailerLinkWithHistory = (props: RetailerLinkWithHistoryProps) => {
+  const { link } = props;
+
+  return (
+    <Div.RetailerLinkContainer>
+      <Div.RetailerLinkHeading key={link.id}>
+        <h2>{link.retailerName}</h2>
+        <Button
+          className={classNames.copyLinkButton}
+          onClick={async () => {
+            await navigator.clipboard.writeText(link.url);
+          }}
+          variant={ButtonVariant.INLINE}
+        >
+          <LinkIcon /> Copy
+        </Button>
+        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
+          <HeartIcon size={24} />
+        </Button>
+        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
+          <PencilIcon size={24} />
+        </Button>
+      </Div.RetailerLinkHeading>
+      <Div.RetailerLinkHistoryContainer>
+        <Div.RetailerLinkHistory>
+          <h3>May 6</h3>
+          <span>Today</span>
+          <span>$1200</span>
+        </Div.RetailerLinkHistory>
+        <Div.RetailerLinkHistory>
+          <h3>May 5</h3>
+          <span>Sunday</span>
+          <span>$1280</span>
+        </Div.RetailerLinkHistory>
+      </Div.RetailerLinkHistoryContainer>
+    </Div.RetailerLinkContainer>
+  );
+};
 
 export interface PriceHistoryModalProps<T extends BuildComponentStoreName> {
   componentType: T;
@@ -40,22 +83,26 @@ export const PriceHistoryModal = <T extends BuildComponentStoreName>(
   return (
     <>
       <Modal variant={ModalVariant.RIGHT_SIDE}>
-        <Div.PriceModal>
-          <Div.PriceModalHeadingContainer>
-            <h2 className={classNames.priceModalHeading}>Price History</h2>
-            <Button onClick={onClose} variant={ButtonVariant.DEFAULT}>
+        <Div.ModalContainer>
+          <Div.NavContainer>
+            <h2 className={classNames.navHeading}>Price History</h2>
+            <Button
+              className={classNames.closeButton}
+              onClick={onClose}
+              variant={ButtonVariant.DEFAULT}
+            >
               Close
             </Button>
-          </Div.PriceModalHeadingContainer>
-          <h1>{row.name}</h1>
-          <Button
-            onClick={() => setAddStoreLinkModalOpen(true)}
-            variant={ButtonVariant.ACCENT}
-          >
-            Add Store Link
-          </Button>
+            <h1>{row.name}</h1>
+            <Button
+              onClick={() => setAddStoreLinkModalOpen(true)}
+              variant={ButtonVariant.ACCENT}
+            >
+              Add Store Link
+            </Button>
+          </Div.NavContainer>
           {showPlaceholder && (
-            <p className={classNames.priceModalPlaceholder}>
+            <p className={classNames.placeholder}>
               This {componentTypeSingularLabel} isn't linked to any current
               store listing. Add a link above to start tracking its price. Add
               multiple links to track the price of the same{" "}
@@ -64,25 +111,14 @@ export const PriceHistoryModal = <T extends BuildComponentStoreName>(
           )}
           {retailerLinks.length > 0 &&
             retailerLinks.map((link) => (
-              <Div.PriceModalRetailerHeading key={link.id}>
-                <h2>{link.retailerName}</h2>
-                <Button
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(link.url);
-                  }}
-                  variant={ButtonVariant.DEFAULT}
-                >
-                  <LinkIcon />
-                  Copy
-                </Button>
-              </Div.PriceModalRetailerHeading>
+              <RetailerLinkWithHistory key={link.id} link={link} />
             ))}
-        </Div.PriceModal>
+        </Div.ModalContainer>
       </Modal>
       {addStoreLinkModalOpen && (
         <Modal>
-          <h2 className={classNames.modalTitle}>Add Store Link</h2>
-          <p className={classNames.modalDescription}>
+          <h2 className={classNames.addLinkModalTitle}>Add Store Link</h2>
+          <p className={classNames.addLinkModalDescription}>
             Find a <strong>{row.name}</strong> listing you like on a retailer's
             website and paste the URL here.
           </p>
