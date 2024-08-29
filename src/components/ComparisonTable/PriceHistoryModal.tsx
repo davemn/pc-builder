@@ -82,8 +82,11 @@ export const PriceHistoryModal = <T extends BuildComponentStoreName>(
         <Modal>
           <h2 className={classNames.addLinkModalTitle}>Add Store Link</h2>
           <p className={classNames.addLinkModalDescription}>
-            Find a <strong>{row.name}</strong> listing you like on a retailer's
-            website and paste the URL here.
+            Find a{" "}
+            <strong>
+              {row.brand} {row.name}
+            </strong>{" "}
+            listing you like on a retailer's website and paste the URL here.
           </p>
           <Form
             schema={[

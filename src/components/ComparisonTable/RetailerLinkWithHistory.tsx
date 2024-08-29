@@ -110,6 +110,17 @@ export const RetailerLinkWithHistory = (
     formatScaledPrice(priceHistory[0].price)
   );
 
+  const commitCurrentPrice = async () => {
+    let scaledValue = parseFloat(`${currentPrice}e2`);
+    if (isNaN(scaledValue) || scaledValue < 0) {
+      scaledValue = 0;
+    }
+
+    await updatePrice(scaledValue);
+
+    setCurrentPrice(formatScaledPrice(scaledValue));
+  };
+
   return (
     <Div.LinkContainer>
       <Div.LinkHeading key={link.id}>
@@ -137,27 +148,26 @@ export const RetailerLinkWithHistory = (
             {i === 0 && (
               <>
                 <span>Today</span>
-                <Input
-                  className={classNames.priceInput}
-                  labelText="$"
-                  type="number"
-                  name="price"
-                  onBlur={async () => {
-                    let scaledValue = parseFloat(`${currentPrice}e2`);
-                    if (isNaN(scaledValue) || scaledValue < 0) {
-                      scaledValue = 0;
-                    }
-
-                    await updatePrice(scaledValue);
-
-                    setCurrentPrice(formatScaledPrice(scaledValue));
+                <form
+                  noValidate // don't show built-in validation popups
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    await commitCurrentPrice();
                   }}
-                  onChange={(e) => {
-                    setCurrentPrice(e.target.value);
-                  }}
-                  value={currentPrice}
-                  variant={InputVariant.INLINE}
-                />
+                >
+                  <Input
+                    className={classNames.priceInput}
+                    labelText="$"
+                    type="number"
+                    name="price"
+                    onBlur={commitCurrentPrice}
+                    onChange={(e) => {
+                      setCurrentPrice(e.target.value);
+                    }}
+                    value={currentPrice}
+                    variant={InputVariant.INLINE}
+                  />
+                </form>
               </>
             )}
             {i > 0 && (
