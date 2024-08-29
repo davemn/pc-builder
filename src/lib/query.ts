@@ -179,3 +179,13 @@ export function addRetailerLinkToComponent(body: {
     body,
   });
 }
+
+export function updateRetailerLink(body: {
+  id: number;
+  changes: Partial<Omit<RetailerProductLinkSchema, "id">>;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "updateRetailerLink",
+    body,
+  });
+}

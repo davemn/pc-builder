@@ -133,6 +133,15 @@ const InputRowMapper = {
 
     return inputRow;
   },
+  retailerLinks: (row: IRow) => {
+    const inputRow: IRow = InputRowMapper.generic(row);
+
+    if ("price_history" in inputRow && Array.isArray(inputRow.price_history)) {
+      inputRow.price_history = JSON.stringify(inputRow.price_history);
+    }
+
+    return inputRow;
+  },
 };
 
 export class UserDataModel {
@@ -631,6 +640,21 @@ export class UserDataModel {
 
       return linkId;
     });
+  }
+
+  async updateRetailerLink({ id, changes }: IpcAction["body"]) {
+    if (typeof id !== "number" || id < 0) {
+      throw new Error("Invalid link ID");
+    }
+
+    if (typeof changes !== "object" || changes === null) {
+      throw new Error("Invalid updates");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const values = InputRowMapper.retailerLinks(changes);
+    await db("retailer_product_link").where({ id }).update(values);
   }
 }
 

@@ -1,8 +1,10 @@
 import { HeartIcon, LinkIcon, PencilIcon } from "@primer/octicons-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Input, InputVariant } from "components/Input";
+import { useRetailerLinkMutations } from "hooks/useRetailerLinks";
+import { BuildComponentStoreName } from "lib/build";
 import { RetailerProductLinkSchema } from "lib/db";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -30,15 +32,19 @@ function formatScaledPrice(price: number) {
 }
 
 interface RetailerLinkWithHistoryProps {
+  componentType: BuildComponentStoreName;
+  componentId: number;
   link: RetailerProductLinkSchema;
 }
 
 export const RetailerLinkWithHistory = (
   props: RetailerLinkWithHistoryProps
 ) => {
-  const { link } = props;
+  const { componentType, componentId, link } = props;
 
-  const [priceHistory, setPriceHistory] = useState(() => {
+  const { updateRetailerLink } = useRetailerLinkMutations();
+
+  const priceHistory = useMemo(() => {
     const now = new Date();
 
     const todayMidnight = new Date(
@@ -59,17 +65,22 @@ export const RetailerLinkWithHistory = (
     }
 
     return [defaultToday, ...sortedHistory];
-  });
+  }, [link.priceHistory]);
 
   const updatePrice = async (price: number) => {
-    setPriceHistory((prev) => {
-      return [
-        {
-          ...prev[0],
-          price,
-        },
-        ...prev.slice(1),
-      ];
+    await updateRetailerLink({
+      componentType,
+      componentId,
+      id: link.id,
+      changes: {
+        priceHistory: [
+          {
+            ...priceHistory[0],
+            price,
+          },
+          ...priceHistory.slice(1),
+        ],
+      },
     });
   };
 

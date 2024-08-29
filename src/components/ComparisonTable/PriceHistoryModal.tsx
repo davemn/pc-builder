@@ -69,7 +69,12 @@ export const PriceHistoryModal = <T extends BuildComponentStoreName>(
           )}
           {retailerLinks.length > 0 &&
             retailerLinks.map((link) => (
-              <RetailerLinkWithHistory key={link.id} link={link} />
+              <RetailerLinkWithHistory
+                key={link.id}
+                componentType={componentType}
+                componentId={row.id}
+                link={link}
+              />
             ))}
         </Div.ModalContainer>
       </Modal>
