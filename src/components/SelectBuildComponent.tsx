@@ -67,7 +67,7 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
             },
           });
         }}
-        onRemove={async (component) => {
+        onRemove={async (componentId) => {
           if (!build) {
             throw new Error("Save failed: Build not found.");
           }
@@ -80,7 +80,7 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
 
           onRemove();
         }}
-        onSelect={async (prevComponent, component) => {
+        onSelect={async (prevComponentId, componentId) => {
           if (!build) {
             throw new Error("Save failed: Build not found.");
           }
@@ -88,7 +88,7 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
           const selectedEdgeId = await assignComponentToBuild({
             buildId: build.id,
             edgeId,
-            componentId: component.id,
+            componentId,
             componentType,
           });
 

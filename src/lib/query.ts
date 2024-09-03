@@ -72,6 +72,24 @@ export function getEdgesWhere(
   });
 }
 
+export async function getComponentIdsWhere<T extends BuildComponentStoreName>(
+  tableName: T,
+  conditions: QueryWhereConditions,
+  orderBy?: QueryOrderBy
+): Promise<Array<number>> {
+  const rows: Array<{ id: number }> = await window.UserDataModel.dispatch({
+    type: "getComponentsWhere",
+    body: {
+      tableName,
+      conditions,
+      orderBy,
+      columns: ["id"],
+    },
+  });
+
+  return rows.map((row) => row.id);
+}
+
 export function getComponentsWhere<T extends BuildComponentStoreName>(
   tableName: T,
   conditions: QueryWhereConditions,

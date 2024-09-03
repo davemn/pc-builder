@@ -251,11 +251,18 @@ export class UserDataModel {
     tableName: rawTableName,
     conditions: rawConditions,
     orderBy: rawOrderBy,
+    columns: rawColumns,
   }: IpcAction["body"]) {
     const tableName = camelCaseToSnakeCase(rawTableName);
 
     if (!UserDataModel.ComponentTableNames.includes(tableName)) {
       throw new Error(`Invalid table name: "${tableName}"`);
+    }
+
+    let columns: string[] | undefined;
+
+    if (Array.isArray(rawColumns)) {
+      columns = rawColumns.map(camelCaseToSnakeCase);
     }
 
     const db = await connectTo(DatabaseName.USER_DATA);
@@ -278,7 +285,7 @@ export class UserDataModel {
       query = query.orderBy(orderBy);
     }
 
-    const rows = await query.select("*");
+    const rows = await query.select(columns ?? "*");
 
     return rows.map(OutputRowMapper.generic);
   }

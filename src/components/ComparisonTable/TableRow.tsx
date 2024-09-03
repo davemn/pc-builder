@@ -2,9 +2,9 @@ import { SyncIcon } from "@primer/octicons-react";
 import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
+import { useComponent } from "hooks/useComponent";
 import { BuildComponentStoreName } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
-import { Schema } from "lib/db";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import { PriceHistoryModal } from "./PriceHistoryModal";
@@ -15,12 +15,12 @@ const { Div, Span } = makeClassNamePrimitives(classNames);
 
 interface TableRowProps<T extends BuildComponentStoreName> {
   columns: Array<ColumnDefinition<T>>;
-  compareToRow?: Schema<T>;
+  compareToRowId?: number;
   componentType: T;
   onEdit: (id: number) => void;
   onRemove?: (id: number) => void;
   onSelect?: (id: number) => void;
-  row: Schema<T>;
+  rowId: number;
   rowIndex: number;
   editButtonVariant?: ButtonVariant;
   removeButtonVariant?: ButtonVariant;
@@ -32,19 +32,30 @@ export const TableRow = <T extends BuildComponentStoreName>(
 ) => {
   const {
     columns,
-    compareToRow,
+    compareToRowId,
     componentType,
     onEdit,
     onRemove,
     onSelect,
-    row,
+    rowId,
     rowIndex,
     editButtonVariant = ButtonVariant.DEFAULT,
     removeButtonVariant = ButtonVariant.ACCENT,
     selectButtonVariant = ButtonVariant.DEFAULT,
   } = props;
 
+  const { component: row, isPending } = useComponent(componentType, rowId);
+
+  const { component: compareToRow } = useComponent(
+    componentType,
+    compareToRowId
+  );
+
   const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
+
+  if (isPending || !row) {
+    return null;
+  }
 
   // TODO move to standalone component
   const renderCellValue = (column: ColumnDefinition<T>) => {

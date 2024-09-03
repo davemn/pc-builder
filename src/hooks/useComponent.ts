@@ -5,38 +5,37 @@ import { QueryKey } from "lib/constants";
 import { Schema } from "lib/db";
 import * as Query from "lib/query";
 
-// TODO instead of requesting every component of a type, useComponents() should return a list of IDs,
-// then each table row should fetch a single component via useComponent(id). That way I can invalidate
-// each individually.
-export function useComponents<T extends BuildComponentStoreName>(
+export function useComponent<T extends BuildComponentStoreName>(
   componentType: T,
-  orderBy?: Query.QueryOrderBy
+  componentId: number | undefined
 ): {
-  components: Array<Schema<T>>;
+  component: Schema<T> | null;
   isError: boolean;
   isFetching: boolean;
   isPending: boolean;
 } {
   const {
-    data: components,
+    data: component,
     isError,
     isPending /* if there's no cached data and no query attempt was finished yet */,
     isFetching /* Is true whenever the queryFn is executing, which includes initial pending as well as background refetches */,
   } = useQuery({
-    queryKey: [componentType, ...(orderBy ? [orderBy] : [])],
+    queryKey: [componentType, componentId],
     queryFn: async () => {
-      const componentsOfType = await Query.getComponentsWhere(
-        componentType,
-        {},
-        orderBy
-      );
+      if (componentId === undefined) {
+        return null;
+      }
 
-      return componentsOfType;
+      const [component] = await Query.getComponentsWhere(componentType, {
+        id: componentId,
+      });
+
+      return component;
     },
   });
 
   return {
-    components: components ?? [],
+    component: component ?? null,
     isError,
     isFetching,
     isPending,
@@ -59,8 +58,8 @@ export function useComponentMutations(): {
 
   const { mutateAsync: updateComponent } = useMutation({
     mutationFn: Query.updateComponent,
-    onSuccess: (_, { componentType }) => {
-      queryClient.invalidateQueries({ queryKey: [componentType] });
+    onSuccess: (_, { componentType, id }) => {
+      queryClient.invalidateQueries({ queryKey: [componentType, id] });
     },
   });
 

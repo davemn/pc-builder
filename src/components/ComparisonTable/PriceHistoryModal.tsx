@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
 import { Modal, ModalVariant } from "components/Modal";
-import { useComponentMutations } from "hooks/useComponents";
+import { useComponentMutations } from "hooks/useComponent";
 import { useRetailerLinks } from "hooks/useRetailerLinks";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
 import { Schema } from "lib/db";

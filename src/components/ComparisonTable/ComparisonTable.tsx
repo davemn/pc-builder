@@ -5,17 +5,13 @@ import { Form } from "components/Form";
 import { Modal } from "components/Modal";
 import { SortControls } from "components/SortControls";
 import { BuildContext } from "context/build";
-import { useComponentMutations, useComponents } from "hooks/useComponents";
-import {
-  BuildComponentMeta,
-  BuildComponentStoreName,
-  Compatibility,
-  ExtendedBuildSchema,
-  overallCompatibility,
-} from "lib/build";
+import { useComponentMutations } from "hooks/useComponent";
+import { useComponentIds } from "hooks/useComponentIds";
+import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
 import { SortDirection } from "lib/constants";
 import { Schema } from "lib/db";
+import * as Query from "lib/query";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import { TableRow } from "./TableRow";
@@ -28,28 +24,26 @@ const { Div, Span } = makeClassNamePrimitives(classNames);
 export interface ComparisonTableProps<T extends BuildComponentStoreName> {
   dataStoreName: T;
   onEditSelected: (previousRow: Schema<T>, row: Schema<T>) => void;
-  onRemove: (row: Schema<T>) => void;
-  onSelect: (previousRow: Schema<T> | null, row: Schema<T>) => void;
+  onRemove: (rowId: number) => void;
+  onSelect: (previousRowId: number | null, rowId: number) => void;
   selectedRowId?: number;
   style?: React.CSSProperties;
 }
 
 interface RowState<T extends BuildComponentStoreName> {
-  allRows: Array<Schema<T>>;
+  allRowIds: Array<number>;
   columns: Array<ColumnDefinition<T>>;
-  selectedRow: Schema<T> | undefined;
   selectedRowIsCompatible: boolean;
-  unselectedRows: Array<Schema<T>>;
-  incompatibleRows: Array<Schema<T>>;
+  unselectedRowIds: Array<number>;
+  incompatibleRowIds: Array<number>;
 }
 
 const InitialRowState = {
-  allRows: [],
+  allRowIds: [],
   columns: [],
-  selectedRow: undefined,
   selectedRowIsCompatible: true,
-  unselectedRows: [],
-  incompatibleRows: [],
+  unselectedRowIds: [],
+  incompatibleRowIds: [],
 };
 
 export const ComparisonTable = <T extends BuildComponentStoreName>(
@@ -78,11 +72,11 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const { pluralName: componentTypePluralLabel } =
     BuildComponentMeta[dataStoreName];
 
-  const {
-    components: sortedRowsOfType,
-    isFetching,
-    isPending,
-  } = useComponents(dataStoreName, sortBy);
+  const { isFetching, isPending, ...queryData } = useComponentIds(
+    dataStoreName,
+    build,
+    sortBy
+  );
 
   const { createComponent, updateComponent } = useComponentMutations();
 
@@ -91,12 +85,11 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   // Tie all of this state to the data query so the table can be reactive to dataStoreName updates
   // without e.g. columns changing before new rows have been fetched
   const {
-    allRows,
+    allRowIds,
     columns,
-    selectedRow,
     selectedRowIsCompatible,
-    unselectedRows,
-    incompatibleRows,
+    unselectedRowIds,
+    incompatibleRowIds,
   } = rowState;
 
   useEffect(() => {
@@ -108,54 +101,35 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       return;
     }
 
+    const {
+      allComponentIds,
+      buildCompatibleComponentIds,
+      buildIncompatibleComponentIds,
+    } = queryData;
+
     const componentMeta = BuildComponentMeta[dataStoreName];
-
-    const getIsBuildCompatible = (
-      row: Schema<T>,
-      build: ExtendedBuildSchema
-    ) => {
-      return (
-        overallCompatibility(
-          componentMeta.getCompatibilityChecks(row, build)
-        ) !== Compatibility.INCOMPATIBLE
-      );
-    };
-
     const columns = componentMeta.columns;
 
-    const allRows = [...sortedRowsOfType];
-
-    let selectedRow: Schema<T> | undefined,
-      unselectedRows: Array<Schema<T>> = [],
-      incompatibleRows: Array<Schema<T>> = [];
-
-    for (const row of allRows) {
-      if (row.id === selectedRowId) {
-        selectedRow = row;
-      } else if (!build || getIsBuildCompatible(row, build)) {
-        unselectedRows.push(row);
-      } else {
-        incompatibleRows.push(row);
-      }
-    }
-
-    const selectedRowIsCompatible =
-      selectedRow && build ? getIsBuildCompatible(selectedRow, build) : true;
+    setRowState({
+      allRowIds: allComponentIds,
+      columns,
+      selectedRowIsCompatible: buildCompatibleComponentIds.some(
+        (id) => id === selectedRowId
+      ),
+      unselectedRowIds: buildCompatibleComponentIds.filter(
+        (id) => id !== selectedRowId
+      ),
+      incompatibleRowIds: buildIncompatibleComponentIds.filter(
+        (id) => id !== selectedRowId
+      ),
+    });
 
     setIsLoading(false);
-
-    setRowState({
-      allRows,
-      columns,
-      selectedRow,
-      selectedRowIsCompatible,
-      unselectedRows,
-      incompatibleRows,
-    });
   }, [isPending, isFetching, selectedRowId, build]);
 
-  const handleEdit = (row: Schema<T>, editingSelected = false) => {
+  const handleEdit = async (rowId: number, editingSelected = false) => {
     setEditModalOpen(true);
+    const [row] = await Query.getComponentsWhere(dataStoreName, { id: rowId });
     setEditRow(row);
     if (editingSelected) {
       setIsEditingSelectedRow(true);
@@ -191,7 +165,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
         </Button>
       </Div.TableName>
 
-      {selectedRow && (
+      {selectedRowId !== undefined && (
         <>
           <h2
             className={cx(
@@ -218,9 +192,9 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               <TableRow
                 columns={columns}
                 componentType={dataStoreName}
-                onEdit={() => handleEdit(selectedRow, true)}
-                onRemove={() => onRemove(selectedRow)}
-                row={selectedRow}
+                onEdit={() => handleEdit(selectedRowId, true)}
+                onRemove={() => onRemove(selectedRowId)}
+                rowId={selectedRowId}
                 rowIndex={0}
                 removeButtonVariant={
                   selectedRowIsCompatible
@@ -245,30 +219,30 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             ...style,
           }}
         >
-          {unselectedRows.map((row, rowI) => (
+          {unselectedRowIds.map((rowId, rowI) => (
             <TableRow
-              key={row.id}
+              key={rowId}
               columns={columns}
-              compareToRow={selectedRow}
+              compareToRowId={selectedRowId}
               componentType={dataStoreName}
-              onEdit={() => handleEdit(row)}
-              onSelect={() => onSelect(selectedRow ?? null, row)}
-              row={row}
+              onEdit={() => handleEdit(rowId)}
+              onSelect={() => onSelect(selectedRowId ?? null, rowId)}
+              rowId={rowId}
               rowIndex={rowI}
             />
           ))}
-          {allRows.length === 0 && (
+          {allRowIds.length === 0 && (
             <Div.EmptyState
               style={{ gridColumn: `1 / span ${columns.length + 2}` }}
             >
               Nothing added
             </Div.EmptyState>
           )}
-          {allRows.length > 0 && unselectedRows.length === 0 && (
+          {allRowIds.length > 0 && unselectedRowIds.length === 0 && (
             <Div.EmptyState
               style={{ gridColumn: `1 / span ${columns.length + 2}` }}
             >
-              {selectedRow
+              {selectedRowId !== undefined
                 ? `No compatible ${componentTypePluralLabel} to compare`
                 : `No ${componentTypePluralLabel} compatible with build`}
             </Div.EmptyState>
@@ -277,7 +251,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       </Div.ScrollContainer>
 
       {/* Rows that are incompatible with the current build */}
-      {incompatibleRows.length > 0 && (
+      {incompatibleRowIds.length > 0 && (
         <>
           <h2 className={classNames.tableName}>
             Incompatible {componentTypePluralLabel}
@@ -289,19 +263,19 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 ...style,
               }}
             >
-              {incompatibleRows.map((row, rowI) => (
+              {incompatibleRowIds.map((rowId, rowI) => (
                 <TableRow
-                  key={row.id}
+                  key={rowId}
                   columns={columns}
-                  compareToRow={selectedRow}
+                  compareToRowId={selectedRowId}
                   componentType={dataStoreName}
-                  onEdit={() => handleEdit(row)}
-                  onSelect={() => onSelect(selectedRow ?? null, row)}
-                  row={row}
+                  onEdit={() => handleEdit(rowId)}
+                  onSelect={() => onSelect(selectedRowId ?? null, rowId)}
+                  rowId={rowId}
                   rowIndex={rowI}
                 />
               ))}
-              {allRows.length === 0 && (
+              {allRowIds.length === 0 && (
                 <Div.EmptyState
                   style={{ gridColumn: `1 / span ${columns.length + 2}` }}
                 >
