@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
@@ -30,22 +30,6 @@ export interface ComparisonTableProps<T extends BuildComponentStoreName> {
   style?: React.CSSProperties;
 }
 
-interface RowState<T extends BuildComponentStoreName> {
-  allRowIds: Array<number>;
-  columns: Array<ColumnDefinition<T>>;
-  selectedRowIsCompatible: boolean;
-  unselectedRowIds: Array<number>;
-  incompatibleRowIds: Array<number>;
-}
-
-const InitialRowState = {
-  allRowIds: [],
-  columns: [],
-  selectedRowIsCompatible: true,
-  unselectedRowIds: [],
-  incompatibleRowIds: [],
-};
-
 export const ComparisonTable = <T extends BuildComponentStoreName>(
   props: ComparisonTableProps<T>
 ) => {
@@ -67,7 +51,6 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editRow, setEditRow] = useState<Schema<T>>();
   const [isEditingSelectedRow, setIsEditingSelectedRow] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const { pluralName: componentTypePluralLabel } =
     BuildComponentMeta[dataStoreName];
@@ -80,52 +63,17 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
 
   const { createComponent, updateComponent } = useComponentMutations();
 
-  const [rowState, setRowState] = useState<RowState<T>>(InitialRowState);
-
-  // Tie all of this state to the data query so the table can be reactive to dataStoreName updates
-  // without e.g. columns changing before new rows have been fetched
-  const {
-    allRowIds,
-    columns,
-    selectedRowIsCompatible,
-    unselectedRowIds,
-    incompatibleRowIds,
-  } = rowState;
-
-  useEffect(() => {
-    if (isPending) {
-      return;
-    }
-
-    if (isFetching) {
-      return;
-    }
-
-    const {
-      allComponentIds,
-      buildCompatibleComponentIds,
-      buildIncompatibleComponentIds,
-    } = queryData;
-
-    const componentMeta = BuildComponentMeta[dataStoreName];
-    const columns = componentMeta.columns;
-
-    setRowState({
-      allRowIds: allComponentIds,
-      columns,
-      selectedRowIsCompatible: buildCompatibleComponentIds.some(
-        (id) => id === selectedRowId
-      ),
-      unselectedRowIds: buildCompatibleComponentIds.filter(
-        (id) => id !== selectedRowId
-      ),
-      incompatibleRowIds: buildIncompatibleComponentIds.filter(
-        (id) => id !== selectedRowId
-      ),
-    });
-
-    setIsLoading(false);
-  }, [isPending, isFetching, selectedRowId, build]);
+  const allRowIds = queryData.allComponentIds;
+  const columns = BuildComponentMeta[dataStoreName].columns;
+  const selectedRowIsCompatible = queryData.buildCompatibleComponentIds.some(
+    (id) => id === selectedRowId
+  );
+  const unselectedRowIds = queryData.buildCompatibleComponentIds.filter(
+    (id) => id !== selectedRowId
+  );
+  const incompatibleRowIds = queryData.buildIncompatibleComponentIds.filter(
+    (id) => id !== selectedRowId
+  );
 
   const handleEdit = async (rowId: number, editingSelected = false) => {
     setEditModalOpen(true);
@@ -136,11 +84,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     }
   };
 
-  useEffect(() => {
-    setIsLoading(true);
-  }, [dataStoreName]);
-
-  if (isLoading) {
+  if (isPending || isFetching) {
     return (
       <Div.Container>
         <Div.TableName>
