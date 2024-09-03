@@ -152,7 +152,11 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       )}
 
       <Div.TableFilters>
-        <SortControls columns={columns} onChangeSort={setSortBy} />
+        <SortControls
+          columns={columns}
+          onChangeSort={setSortBy}
+          sortBy={sortBy}
+        />
       </Div.TableFilters>
 
       {/* Rows that are compatible with the current build */}
