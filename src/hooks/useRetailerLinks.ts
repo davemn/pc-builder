@@ -7,7 +7,7 @@ import * as Query from "lib/query";
 
 export function useRetailerLinks<T extends BuildComponentStoreName>(
   componentType: T,
-  componentId: number
+  componentId: number | null | undefined
 ): {
   retailerLinks: Array<RetailerProductLinkSchema>;
   isError: boolean;
@@ -20,8 +20,13 @@ export function useRetailerLinks<T extends BuildComponentStoreName>(
     isPending /* if there's no cached data and no query attempt was finished yet */,
     isFetching /* Is true whenever the queryFn is executing, which includes initial pending as well as background refetches */,
   } = useQuery({
+    enabled: typeof componentId === "number",
     queryKey: [componentType, componentId, QueryKey.RETAILER_LINK],
     queryFn: async () => {
+      if (typeof componentId !== "number") {
+        return [];
+      }
+
       const links = await Query.getComponentRetailerLinks({
         componentType,
         componentId,

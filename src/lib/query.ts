@@ -63,6 +63,16 @@ export function getBuildsWhere(
   });
 }
 
+export function getBuildPrice(body: {
+  buildId: number;
+  componentType?: BuildComponentStoreName;
+}): Promise<number | null> {
+  return window.UserDataModel.dispatch({
+    type: "getBuildPrice",
+    body,
+  });
+}
+
 export function getEdgesWhere(
   conditions: QueryWhereConditions
 ): Promise<Array<EdgeSchema>> {

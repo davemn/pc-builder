@@ -6,30 +6,16 @@ import { Input, InputVariant } from "components/Input";
 import { useRetailerLinkMutations } from "hooks/useRetailerLinks";
 import { BuildComponentStoreName } from "lib/build";
 import { RetailerProductLinkSchema } from "lib/db";
+import {
+  formatDayOfMonth,
+  formatDayOfWeek,
+  formatScaledPrice,
+} from "lib/format";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./RetailerLinkWithHistory.module.css";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
-
-function formatDayOfMonth(ts: number) {
-  const date = new Date(ts);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatDayOfWeek(ts: number) {
-  const date = new Date(ts);
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-  });
-}
-
-function formatScaledPrice(price: number) {
-  return parseFloat(`${price}e-2`).toFixed(2).toString();
-}
 
 interface RetailerLinkWithHistoryProps {
   componentType: BuildComponentStoreName;

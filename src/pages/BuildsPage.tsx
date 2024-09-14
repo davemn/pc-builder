@@ -9,12 +9,14 @@ import {
 } from "hooks/useBuild";
 import { useBuildGroupMutations } from "hooks/useBuildGroup";
 import { useBuildGroups } from "hooks/useBuildGroups";
+import { useBuildPrice } from "hooks/useBuildPrice";
 import {
   BuildComponentMeta,
   BuildComponentStoreName,
   OrderedBuildComponentStoreNames,
 } from "lib/build";
 import { BuildSchema, Schema } from "lib/db";
+import { formatScaledPrice } from "lib/format";
 import { BuildsPageProps } from "lib/page";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -49,7 +51,7 @@ interface BuildSummaryPlaceholderProps {
 
 interface BuildSummaryComponentProps {
   buildId: number;
-  compareToPrice: number | null;
+  compareToBuildId: number | null | undefined;
   componentType: BuildComponentStoreName;
 }
 
@@ -58,17 +60,8 @@ interface IndicatorPriceProps {
   compareToPrice: number | null;
 }
 
-function getSlotPrice(
-  components: Array<Schema<BuildComponentStoreName>> | undefined
-): number | null {
-  if (!components || components.length === 0) {
-    return null;
-  }
-  return components.reduce((acc, component) => acc + component.price, 0);
-}
-
 function formatPrice(price: number): string {
-  return `$${Math.round(price)}`;
+  return `$${formatScaledPrice(price)}`;
 }
 
 const IndicatorPrice = (props: IndicatorPriceProps) => {
@@ -90,10 +83,16 @@ const IndicatorPrice = (props: IndicatorPriceProps) => {
 };
 
 const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
-  const { buildId, compareToPrice, componentType } = props;
+  const { buildId, compareToBuildId, componentType } = props;
 
   const { components: assignedSlots } = useAssignedComponents(
     buildId,
+    componentType
+  );
+
+  const { price: assignedSlotsPrice } = useBuildPrice(buildId, componentType);
+  const { price: compareToPrice } = useBuildPrice(
+    compareToBuildId,
     componentType
   );
 
@@ -104,7 +103,7 @@ const BuildSummaryComponent = (props: BuildSummaryComponentProps) => {
       <Div.ComponentName>
         <span>{componentMeta.singularName}</span>
         <IndicatorPrice
-          price={getSlotPrice(assignedSlots)}
+          price={assignedSlotsPrice}
           compareToPrice={compareToPrice}
         />
       </Div.ComponentName>
@@ -131,6 +130,9 @@ const BuildSummary = (props: BuildSummaryProps) => {
     onRemove,
   } = props;
 
+  const { price } = useBuildPrice(build?.id);
+  const { price: compareToPrice } = useBuildPrice(compareToBuild?.id);
+
   return (
     <Div.BuildSummary
       onClick={onClick}
@@ -145,19 +147,14 @@ const BuildSummary = (props: BuildSummaryProps) => {
       <h1>{build.name}</h1>
       {/* indicator color for total price */}
       <h2>
-        <IndicatorPrice
-          price={build.price}
-          compareToPrice={compareToBuild?.price ?? null}
-        />
+        <IndicatorPrice price={price} compareToPrice={compareToPrice} />
       </h2>
       {OrderedBuildComponentStoreNames.map((componentType) => (
         <BuildSummaryComponent
           key={componentType}
           buildId={build.id}
           componentType={componentType}
-          compareToPrice={getSlotPrice(
-            compareToBuild?.components?.[componentType]
-          )}
+          compareToBuildId={compareToBuild?.id}
         />
       ))}
       <Div.Actions>

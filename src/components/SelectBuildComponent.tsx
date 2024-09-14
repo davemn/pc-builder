@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useContext } from "react";
 
 import {
@@ -7,6 +8,7 @@ import {
 import { BuildContext } from "context/build";
 import { useBuildMutations } from "hooks/useBuild";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
+import { QueryKey } from "lib/constants";
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./SelectBuildComponent.module.css";
@@ -32,6 +34,8 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
   const { componentType, edgeId, onRemove, onSelect, showOutOfBoundsWarning } =
     props;
 
+  const queryClient = useQueryClient();
+
   const { build } = useContext(BuildContext);
 
   const { assignComponentToBuild, removeComponentFromBuild, updateBuild } =
@@ -52,20 +56,13 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
       )}
       <ComparisonTable
         dataStoreName={componentType}
-        onEditSelected={async (prevComponent, component) => {
-          // update build price
-          if (!build) {
-            throw new Error("Save failed: Build not found.");
+        onEditSelectedPriceHistory={async (componentId) => {
+          // recompute build price
+          if (build) {
+            queryClient.invalidateQueries({
+              queryKey: [QueryKey.BUILD, build.id, QueryKey.PRICE],
+            });
           }
-          let price = build.price;
-          price -= prevComponent.price;
-          price += component.price;
-          await updateBuild({
-            id: build.id,
-            changes: {
-              price,
-            },
-          });
         }}
         onRemove={async (componentId) => {
           if (!build) {
@@ -76,6 +73,10 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
             buildId: build.id,
             edgeId: edgeId ?? -1,
             componentType,
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: [QueryKey.BUILD, build.id, QueryKey.PRICE],
           });
 
           onRemove();
@@ -90,6 +91,10 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
             edgeId,
             componentId,
             componentType,
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: [QueryKey.BUILD, build.id, QueryKey.PRICE],
           });
 
           onSelect(selectedEdgeId);

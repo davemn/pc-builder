@@ -12,6 +12,7 @@ export enum QueryKey {
   BUILD = "build",
   BUILD_GROUP = "build_group",
   RETAILER_LINK = "retailer_link",
+  PRICE = "price",
 }
 
 // Intl locale regions

@@ -181,6 +181,51 @@ export class UserDataModel {
     }
   }
 
+  // Static helpers not exposed directly to the renderer process, but for use in the instance methods below
+  static async getComponentPrice(
+    tx: KnexNamespace.Transaction,
+    {
+      componentId,
+      componentType,
+    }: {
+      componentId: number;
+      componentType: string;
+    }
+  ): Promise<number> {
+    const edges = await tx("edge")
+      .where({
+        source_id: componentId,
+        source_type: componentType,
+        target_type: "retailer_product_link",
+      })
+      .select("target_id");
+
+    let productLinks = await tx("retailer_product_link")
+      .whereIn(
+        "id",
+        edges.map((edge) => edge.target_id)
+      )
+      .select("is_favorite", "price_history");
+
+    if (productLinks.length === 0) {
+      return 0;
+    }
+
+    productLinks = productLinks.map((row) => ({
+      ...row,
+      price_history: JSON.parse(row.price_history),
+    }));
+
+    const favoriteLink = productLinks.find((link) => link.is_favorite);
+
+    if (favoriteLink) {
+      return favoriteLink.price_history[0].price;
+    }
+
+    console.warn(`No favorite link found for ${componentType}`, componentId);
+    return 0;
+  }
+
   // Add new methods here, no other boilerplate in main / preload needed
 
   async addBuildGroup({ name }: IpcAction["body"]) {
@@ -232,6 +277,60 @@ export class UserDataModel {
 
     const rows = await query.select("*");
     return rows.map(OutputRowMapper.generic);
+  }
+
+  async getBuildPrice({ buildId, componentType }: IpcAction["body"]) {
+    if (typeof buildId !== "number" || buildId < 0) {
+      throw new Error("Invalid build ID");
+    }
+
+    // optional filter by component type
+    let componentTableName: string | null = null;
+    if (typeof componentType === "string") {
+      componentTableName = camelCaseToSnakeCase(componentType);
+
+      if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
+        throw new Error(`Invalid table name: "${componentTableName}"`);
+      }
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    return await db.transaction(async (tx) => {
+      const build = await tx("build").where({ id: buildId }).first();
+
+      if (!build) {
+        return null;
+      }
+
+      // find all component edges for this build, or optionally only the edges for a specific component type
+
+      const edgesQuery = tx("edge").where({
+        source_id: buildId,
+        source_type: "build",
+      });
+
+      if (componentTableName) {
+        edgesQuery.where("target_type", componentTableName);
+      } else {
+        edgesQuery.whereIn("target_type", UserDataModel.ComponentTableNames);
+      }
+
+      const componentEdges = await edgesQuery.select("*");
+
+      let price = 0;
+
+      for (const edge of componentEdges) {
+        const componentPrice = await UserDataModel.getComponentPrice(tx, {
+          componentType: edge.target_type,
+          componentId: edge.target_id,
+        });
+
+        price += componentPrice;
+      }
+
+      return price;
+    });
   }
 
   async getEdgesWhere(rawConditions: IRow) {
@@ -330,7 +429,7 @@ export class UserDataModel {
       let buildId: number;
       if (buildIdToCopy === undefined) {
         const [newBuild] = await tx("build")
-          .insert({ name: "New Build", price: 0 })
+          .insert({ name: "New Build" })
           .returning("id");
         buildId = newBuild.id;
       } else {
@@ -345,7 +444,6 @@ export class UserDataModel {
         const [copiedBuild] = await tx("build")
           .insert({
             name: `${buildToCopy.name} (Copy)`,
-            price: buildToCopy.price,
           })
           .returning("id");
         buildId = copiedBuild.id;
@@ -434,9 +532,6 @@ export class UserDataModel {
       await tx("edge")
         .where({ source_id: buildId, source_type: "build", id: edgeId })
         .del();
-
-      const price = build.price - component.price;
-      await tx("build").where({ id: buildId }).update({ price });
     });
   }
 
@@ -515,15 +610,6 @@ export class UserDataModel {
           target_id: componentId,
         });
       }
-
-      // update build price
-      let price = build.price;
-      if (typeof prevComponent?.price === "number") {
-        price -= prevComponent.price;
-      }
-      price += component.price;
-
-      await tx("build").where({ id: buildId }).update({ price });
 
       return newEdgeId;
     });
@@ -631,9 +717,21 @@ export class UserDataModel {
     const db = await connectTo(DatabaseName.USER_DATA);
 
     return db.transaction(async (tx) => {
+      const existingLinkEdges = await tx("edge").where({
+        source_id: componentId,
+        source_type: componentTableName,
+        target_type: "retailer_product_link",
+      });
+
+      // By default, the first link added is marked as favorite
+      let is_favorite = false;
+      if (existingLinkEdges.length === 0) {
+        is_favorite = true;
+      }
+
       let linkId: number;
       const [newLink] = await tx("retailer_product_link")
-        .insert({ retailer_name: retailerName, url })
+        .insert({ retailer_name: retailerName, url, is_favorite })
         .returning("id");
 
       linkId = newLink.id;
@@ -661,7 +759,10 @@ export class UserDataModel {
     const db = await connectTo(DatabaseName.USER_DATA);
 
     const values = InputRowMapper.retailerLinks(changes);
-    await db("retailer_product_link").where({ id }).update(values);
+
+    await db.transaction(async (tx) => {
+      await tx("retailer_product_link").where({ id }).update(values);
+    });
   }
 }
 
@@ -820,10 +921,51 @@ export const migrations: Array<DatabaseMigration> = [
     },
     down: async (knex: KnexNamespace) => {},
   },
+  {
+    name: "move_price_to_retailer_link",
+    up: async (knex: KnexNamespace) => {
+      // remove price column from builds
+      await knex.schema.alterTable("build", (table) => {
+        table.dropColumn("price");
+      });
+
+      // remove price column from components
+      await knex.schema.alterTable("cpu", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("gpu", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("ram", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("m2_storage", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("sata_storage", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("psu", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("mobo", (table) => {
+        table.dropColumn("price");
+      });
+      await knex.schema.alterTable("cooler", (table) => {
+        table.dropColumn("price");
+      });
+
+      // add is_favorite column to retailer_product_link
+      await knex.schema.table("retailer_product_link", (table) => {
+        table.boolean("is_favorite").notNullable().defaultTo(false);
+      });
+    },
+    down: async (knex: KnexNamespace) => {},
+  },
   // TODO for future migration, other component types:
-  // case: "++id, brand, name, price, formFactor, frontUsbPorts, frontAudioPorts, driveBays, maxGpuLength, maxCpuCoolerHeight, maxPsuLength, maxRadiatorLength, maxRadiatorWidth, maxRadiatorHeight, maxFanLength, maxFanWidth, maxFanHeight, maxFanCount, maxDustFilterCount",
-  // nvmeCarrierCard: "++id, brand, name, price, type, pcieVersion, m2Slots",
-  // rgbLighting: "++id, brand, name, price, type, color, brightness",
-  // soundCard: "++id, brand, name, price, type, spdifOutputs, spdifInputs, line35mmOutputs, headphone35mmOutputs, microphone35mmInputs"
-  // monitor: "++id, brand, name, price, resolution, refreshRate, panelType, responseTime, aspectRatio, size, vesaMount, hdmiInputs, displayPortInputs, usbPorts, speakers, freesync, gsync, curved, color, brightness, contrast, viewingAngle, powerConsumption, weight, height, width, depth",
+  // case: "++id, brand, name, formFactor, frontUsbPorts, frontAudioPorts, driveBays, maxGpuLength, maxCpuCoolerHeight, maxPsuLength, maxRadiatorLength, maxRadiatorWidth, maxRadiatorHeight, maxFanLength, maxFanWidth, maxFanHeight, maxFanCount, maxDustFilterCount",
+  // nvmeCarrierCard: "++id, brand, name, type, pcieVersion, m2Slots",
+  // rgbLighting: "++id, brand, name, type, color, brightness",
+  // soundCard: "++id, brand, name, type, spdifOutputs, spdifInputs, line35mmOutputs, headphone35mmOutputs, microphone35mmInputs"
+  // monitor: "++id, brand, name, resolution, refreshRate, panelType, responseTime, aspectRatio, size, vesaMount, hdmiInputs, displayPortInputs, usbPorts, speakers, freesync, gsync, curved, color, brightness, contrast, viewingAngle, powerConsumption, weight, height, width, depth",
 ];

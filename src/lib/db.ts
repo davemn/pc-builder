@@ -28,7 +28,6 @@ export interface EdgeSchema<
 export interface BuildSchema {
   id: number;
   name: string;
-  price: number;
 }
 
 export interface BuildGroupSchema {
@@ -40,7 +39,6 @@ export interface CpuSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   socket: string;
   cores: number;
   cache: number;
@@ -53,7 +51,6 @@ export interface GpuSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   vram: number;
   tdp: number;
   wattage: number;
@@ -65,7 +62,6 @@ export interface RamSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   capacity: number;
   speed: number;
   type: string;
@@ -75,7 +71,6 @@ export interface M2StorageSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   capacity: number;
   moduleCode: string; // e.g. 2280, 22110
   moduleKey: string; // M, B
@@ -89,7 +84,6 @@ export interface SataStorageSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   capacity: number;
   formFactor: string; // 2.5", 3.5"
   readSpeed: number;
@@ -100,7 +94,6 @@ export interface PsuSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   sustainedWattage: number;
   peakWattage: number;
   atxVersion: string;
@@ -111,7 +104,6 @@ export interface MoboSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   socket: string;
   formFactor: string;
   ramSlots: number;
@@ -148,7 +140,6 @@ export interface CoolerSchema {
   id: number;
   brand: string;
   name: string;
-  price: number;
   /* TODO type was meant to be "water" | "air", but might be better used for
    * "gpu" | "cpu" | "ram" | "ssd" | "case" to separate cooling requirements
    * for different components.
@@ -166,6 +157,7 @@ export interface RetailerProductLinkSchema {
   id: number;
   retailerName: string;
   url: string;
+  isFavorite: boolean;
   priceHistory: Array<{ price: number; date: number }>;
 }
 

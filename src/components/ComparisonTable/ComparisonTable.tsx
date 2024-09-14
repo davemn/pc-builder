@@ -14,6 +14,7 @@ import { Schema } from "lib/db";
 import * as Query from "lib/query";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
+import { PriceHistoryModal } from "./PriceHistoryModal";
 import { TableRow } from "./TableRow";
 
 import classNames from "./ComparisonTable.module.css";
@@ -23,7 +24,8 @@ const { Div, Span } = makeClassNamePrimitives(classNames);
 
 export interface ComparisonTableProps<T extends BuildComponentStoreName> {
   dataStoreName: T;
-  onEditSelected: (previousRow: Schema<T>, row: Schema<T>) => void;
+  onEditSelected?: (previousRow: Schema<T>, row: Schema<T>) => void;
+  onEditSelectedPriceHistory?: (rowId: number) => void;
   onRemove: (rowId: number) => void;
   onSelect: (previousRowId: number | null, rowId: number) => void;
   selectedRowId?: number;
@@ -36,6 +38,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const {
     dataStoreName,
     onEditSelected,
+    onEditSelectedPriceHistory,
     onRemove,
     onSelect,
     selectedRowId,
@@ -49,6 +52,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   >([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
   const [editRow, setEditRow] = useState<Schema<T>>();
   const [isEditingSelectedRow, setIsEditingSelectedRow] = useState(false);
 
@@ -75,8 +79,21 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
     (id) => id !== selectedRowId
   );
 
+  // TODO move the modal rendering & state down into the row component
   const handleEdit = async (rowId: number, editingSelected = false) => {
     setEditModalOpen(true);
+    const [row] = await Query.getComponentsWhere(dataStoreName, { id: rowId });
+    setEditRow(row);
+    if (editingSelected) {
+      setIsEditingSelectedRow(true);
+    }
+  };
+
+  const handleEditPriceHistory = async (
+    rowId: number,
+    editingSelected = false
+  ) => {
+    setPriceHistoryModalOpen(true);
     const [row] = await Query.getComponentsWhere(dataStoreName, { id: rowId });
     setEditRow(row);
     if (editingSelected) {
@@ -137,6 +154,9 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 columns={columns}
                 componentType={dataStoreName}
                 onEdit={() => handleEdit(selectedRowId, true)}
+                onEditPriceHistory={() =>
+                  handleEditPriceHistory(selectedRowId, true)
+                }
                 onRemove={() => onRemove(selectedRowId)}
                 rowId={selectedRowId}
                 rowIndex={0}
@@ -174,6 +194,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               compareToRowId={selectedRowId}
               componentType={dataStoreName}
               onEdit={() => handleEdit(rowId)}
+              onEditPriceHistory={() => handleEditPriceHistory(rowId)}
               onSelect={() => onSelect(selectedRowId ?? null, rowId)}
               rowId={rowId}
               rowIndex={rowI}
@@ -218,6 +239,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                   compareToRowId={selectedRowId}
                   componentType={dataStoreName}
                   onEdit={() => handleEdit(rowId)}
+                  onEditPriceHistory={() => handleEditPriceHistory(rowId)}
                   onSelect={() => onSelect(selectedRowId ?? null, rowId)}
                   rowId={rowId}
                   rowIndex={rowI}
@@ -293,7 +315,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               });
 
               if (isEditingSelectedRow) {
-                onEditSelected(editRow, { ...editRow, ...data } as Schema<T>);
+                onEditSelected?.(editRow, { ...editRow, ...data } as Schema<T>);
                 setIsEditingSelectedRow(false);
               }
 
@@ -302,6 +324,22 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             }}
           />
         </Modal>
+      )}
+
+      {priceHistoryModalOpen && editRow && (
+        <PriceHistoryModal
+          componentType={dataStoreName}
+          onClose={() => {
+            if (isEditingSelectedRow) {
+              onEditSelectedPriceHistory?.(editRow.id);
+              setIsEditingSelectedRow(false);
+            }
+
+            setEditRow(undefined);
+            setPriceHistoryModalOpen(false);
+          }}
+          row={editRow}
+        />
       )}
     </Div.Container>
   );

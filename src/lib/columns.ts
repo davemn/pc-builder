@@ -1,5 +1,6 @@
 import { BuildComponentStoreName } from "lib/build";
 import { Schema } from "lib/db";
+import { formatScaledPrice } from "lib/format";
 
 /**
  * Sort an array by 1+ columns. Prefer using the database for handling sorting when possible.
@@ -57,7 +58,8 @@ export type UnitDefinition =
 export interface ColumnDefinition<T extends BuildComponentStoreName> {
   label: string;
   // plain "keyof" becomes "string | number | symbol", per https://stackoverflow.com/a/65420892
-  name: Extract<keyof Schema<T>, string>;
+  // "price" is the exception here because it's not actually a field on any schema, it's computed from the associated product link(s)
+  name: Extract<keyof Schema<T>, string> | "price";
   unit: UnitDefinition;
 }
 
@@ -74,7 +76,7 @@ export const Unit: Record<string, UnitDefinition> = {
   },
   CURRENCY: {
     dataType: "currency",
-    format: (value: number) => `$${Math.ceil(value)}`,
+    format: (value: number) => `$${formatScaledPrice(value)}`,
     compareQuality: QualityFn.LESS_IS_BETTER,
   },
   MILLIMETERS: {

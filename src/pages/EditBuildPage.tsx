@@ -17,10 +17,12 @@ import {
   overallCompatibility,
 } from "lib/build";
 import { Schema } from "lib/db";
+import { formatScaledPrice } from "lib/format";
 import { EditBuildPageProps } from "lib/page";
 import { cx, makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./EditBuildPage.module.css";
+import { useBuildPrice } from "hooks/useBuildPrice";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
@@ -133,6 +135,8 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
   const { updateBuildGroup } = useBuildGroupMutations();
   const { updateBuild } = useBuildMutations();
 
+  const { price } = useBuildPrice(build?.id);
+
   /* Sets the content pane */
   const [selectedComponentType, setSelectedComponentType] =
     useState<BuildComponentStoreName | null>(null);
@@ -172,7 +176,9 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
           <Div.LabelledControlInline>
             <h2>Build Price</h2>
             {build && (
-              <Span.BuildPrice>{`$${Math.round(build.price)}`}</Span.BuildPrice>
+              <Span.BuildPrice>{`$${formatScaledPrice(
+                price
+              )}`}</Span.BuildPrice>
             )}
           </Div.LabelledControlInline>
         </>

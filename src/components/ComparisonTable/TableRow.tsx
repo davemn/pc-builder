@@ -1,13 +1,12 @@
 import { SyncIcon } from "@primer/octicons-react";
-import { useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { useComponent } from "hooks/useComponent";
+import { useRetailerLinks } from "hooks/useRetailerLinks";
 import { BuildComponentStoreName } from "lib/build";
 import { ColumnDefinition } from "lib/columns";
+import { formatTimeFromNow } from "lib/format";
 import { makeClassNamePrimitives } from "lib/styles";
-
-import { PriceHistoryModal } from "./PriceHistoryModal";
 
 import classNames from "./ComparisonTable.module.css";
 
@@ -18,6 +17,7 @@ interface TableRowProps<T extends BuildComponentStoreName> {
   compareToRowId?: number;
   componentType: T;
   onEdit: (id: number) => void;
+  onEditPriceHistory: (id: number) => void;
   onRemove?: (id: number) => void;
   onSelect?: (id: number) => void;
   rowId: number;
@@ -35,6 +35,7 @@ export const TableRow = <T extends BuildComponentStoreName>(
     compareToRowId,
     componentType,
     onEdit,
+    onEditPriceHistory,
     onRemove,
     onSelect,
     rowId,
@@ -51,15 +52,22 @@ export const TableRow = <T extends BuildComponentStoreName>(
     compareToRowId
   );
 
-  const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
+  const { retailerLinks } = useRetailerLinks(componentType, row?.id);
 
   if (isPending || !row) {
     return null;
   }
 
-  // TODO move to standalone component
+  const favoriteProductLink = retailerLinks.find((link) => link.isFavorite);
+  const latestPriceHistory = favoriteProductLink?.priceHistory[0];
+
   const renderCellValue = (column: ColumnDefinition<T>) => {
-    const value = row[column.name];
+    let value;
+    if (column.name === "price") {
+      value = latestPriceHistory?.price ?? 0;
+    } else {
+      value = row[column.name];
+    }
     let valueText: string;
 
     switch (column.unit.dataType) {
@@ -82,9 +90,11 @@ export const TableRow = <T extends BuildComponentStoreName>(
         break;
     }
 
-    if (!compareToRow) {
+    if (!compareToRow || column.name === "price") {
       return <Span.CellValueNeutral>{valueText}</Span.CellValueNeutral>;
     }
+
+    // TODO compare price to compareToRow
 
     const compareToValue = compareToRow[column.name];
     let quality: number;
@@ -144,13 +154,21 @@ export const TableRow = <T extends BuildComponentStoreName>(
             <Span.CellName>{column.label}</Span.CellName>
             <button
               className={classNames.cellPriceRefreshButton}
-              onClick={() => setPriceHistoryModalOpen(true)}
+              onClick={() => onEditPriceHistory(row.id)}
             >
               {renderCellValue(column)}
               <SyncIcon size="small" />
             </button>
-            <Div.CellStoreName>B&H Photo Video</Div.CellStoreName>
-            <Div.CellLastUpdate>1 week ago</Div.CellLastUpdate>
+            {favoriteProductLink && latestPriceHistory && (
+              <>
+                <Div.CellStoreName>
+                  {favoriteProductLink.retailerName}
+                </Div.CellStoreName>
+                <Div.CellLastUpdate>
+                  {formatTimeFromNow(latestPriceHistory.date)}
+                </Div.CellLastUpdate>
+              </>
+            )}
           </Div.Cell>
         );
       default:
@@ -192,13 +210,6 @@ export const TableRow = <T extends BuildComponentStoreName>(
           </Button>
         )}
       </Div.ActionCell>
-      {priceHistoryModalOpen && (
-        <PriceHistoryModal
-          componentType={componentType}
-          onClose={() => setPriceHistoryModalOpen(false)}
-          row={row}
-        />
-      )}
     </>
   );
 };
