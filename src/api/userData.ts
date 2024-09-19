@@ -9,7 +9,7 @@ interface IpcAction {
 }
 
 interface IRow {
-  [key: string]: string | number | string[] | number[] | null;
+  [key: string]: string | number | boolean | string[] | number[] | null;
 }
 
 interface IOrderByColumn {
@@ -106,6 +106,10 @@ const OutputRowMapper = {
         console.error("Error parsing price history JSON", e);
         outputRow.priceHistory = [];
       }
+    }
+
+    if ("isFavorite" in outputRow && typeof outputRow.isFavorite === "number") {
+      outputRow.isFavorite = Boolean(outputRow.isFavorite);
     }
 
     return outputRow;
@@ -216,7 +220,7 @@ export class UserDataModel {
       price_history: JSON.parse(row.price_history),
     }));
 
-    const favoriteLink = productLinks.find((link) => link.is_favorite);
+    const favoriteLink = productLinks.find((link) => Boolean(link.is_favorite));
 
     if (favoriteLink) {
       return favoriteLink.price_history[0].price;
@@ -762,6 +766,48 @@ export class UserDataModel {
 
     await db.transaction(async (tx) => {
       await tx("retailer_product_link").where({ id }).update(values);
+    });
+  }
+
+  async toggleFavoriteRetailerLink({
+    componentType,
+    componentId,
+    linkId,
+  }: IpcAction["body"]) {
+    const componentTableName = camelCaseToSnakeCase(componentType);
+
+    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
+      throw new Error(`Invalid table name: "${componentTableName}"`);
+    }
+
+    if (typeof componentId !== "number" || componentId < 0) {
+      throw new Error("Invalid component ID");
+    }
+
+    if (typeof linkId !== "number" || linkId < 0) {
+      throw new Error("Invalid link ID");
+    }
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    return db.transaction(async (tx) => {
+      const edges = await tx("edge")
+        .where({
+          source_id: componentId,
+          source_type: componentTableName,
+          target_type: "retailer_product_link",
+        })
+        .select("target_id");
+
+      const linkIds = edges.map((edge) => edge.target_id);
+
+      await tx("retailer_product_link")
+        .whereIn("id", linkIds)
+        .update({ is_favorite: false });
+
+      await tx("retailer_product_link")
+        .where({ id: linkId })
+        .update({ is_favorite: true });
     });
   }
 }

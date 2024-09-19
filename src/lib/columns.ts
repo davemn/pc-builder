@@ -76,7 +76,8 @@ export const Unit: Record<string, UnitDefinition> = {
   },
   CURRENCY: {
     dataType: "currency",
-    format: (value: number) => `$${formatScaledPrice(value)}`,
+    format: (value: number) =>
+      value === 0 ? "-" : `$${formatScaledPrice(value)}`,
     compareQuality: QualityFn.LESS_IS_BETTER,
   },
   MILLIMETERS: {

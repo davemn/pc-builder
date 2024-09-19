@@ -57,6 +57,7 @@ const updateRetailerLinkMutationFn = (body: {
 
 export function useRetailerLinkMutations(): {
   updateRetailerLink: typeof updateRetailerLinkMutationFn;
+  toggleFavoriteRetailerLink: typeof Query.toggleFavoriteRetailerLink;
 } {
   const queryClient = useQueryClient();
 
@@ -69,7 +70,17 @@ export function useRetailerLinkMutations(): {
     },
   });
 
+  const { mutateAsync: toggleFavoriteRetailerLink } = useMutation({
+    mutationFn: Query.toggleFavoriteRetailerLink,
+    onSuccess: (_, { componentType, componentId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [componentType, componentId, QueryKey.RETAILER_LINK],
+      });
+    },
+  });
+
   return {
+    toggleFavoriteRetailerLink,
     updateRetailerLink,
   };
 }

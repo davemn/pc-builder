@@ -1,8 +1,14 @@
-import { HeartIcon, LinkIcon, PencilIcon } from "@primer/octicons-react";
-import { useMemo, useState } from "react";
+import {
+  HeartFillIcon,
+  HeartIcon,
+  LinkIcon,
+  PencilIcon,
+} from "@primer/octicons-react";
+import { useContext, useMemo, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { Input, InputVariant } from "components/Input";
+import { BuildContext } from "context/build";
 import { useRetailerLinkMutations } from "hooks/useRetailerLinks";
 import { BuildComponentStoreName } from "lib/build";
 import { RetailerProductLinkSchema } from "lib/db";
@@ -28,7 +34,10 @@ export const RetailerLinkWithHistory = (
 ) => {
   const { componentType, componentId, link } = props;
 
-  const { updateRetailerLink } = useRetailerLinkMutations();
+  const { build } = useContext(BuildContext);
+
+  const { toggleFavoriteRetailerLink, updateRetailerLink } =
+    useRetailerLinkMutations();
 
   const priceHistory = useMemo(() => {
     const now = new Date();
@@ -67,6 +76,14 @@ export const RetailerLinkWithHistory = (
           ...priceHistory.slice(1),
         ],
       },
+    });
+  };
+
+  const toggleFavorite = async () => {
+    await toggleFavoriteRetailerLink({
+      componentType,
+      componentId,
+      linkId: link.id,
     });
   };
 
@@ -120,8 +137,9 @@ export const RetailerLinkWithHistory = (
         >
           <LinkIcon /> Copy
         </Button>
-        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
-          <HeartIcon size={24} />
+        <Button onClick={toggleFavorite} variant={ButtonVariant.INLINE}>
+          {link.isFavorite && <HeartFillIcon size={24} />}
+          {!link.isFavorite && <HeartIcon size={24} />}
         </Button>
         <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
           <PencilIcon size={24} />

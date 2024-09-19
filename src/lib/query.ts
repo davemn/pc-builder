@@ -217,3 +217,14 @@ export function updateRetailerLink(body: {
     body,
   });
 }
+
+export function toggleFavoriteRetailerLink(body: {
+  componentType: BuildComponentStoreName;
+  componentId: number;
+  linkId: number;
+}): Promise<void> {
+  return window.UserDataModel.dispatch({
+    type: "toggleFavoriteRetailerLink",
+    body,
+  });
+}
