@@ -8,7 +8,7 @@ import { BuildContext } from "context/build";
 import { useComponentMutations } from "hooks/useComponent";
 import { useComponentIds } from "hooks/useComponentIds";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { ColumnDefinition } from "lib/columns";
+import { ColumnDefinition, isDerivedColumn } from "lib/columns";
 import { SortDirection } from "lib/constants";
 import { Schema } from "lib/db";
 import * as Query from "lib/query";
@@ -261,11 +261,13 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
         <Modal>
           <h2 className={classNames.modalTitle}>Add</h2>
           <Form
-            schema={columns.map((column) => ({
-              dataType: column.unit.dataType,
-              name: column.name,
-              label: column.label,
-            }))}
+            schema={columns
+              .filter((column) => !isDerivedColumn(dataStoreName, column))
+              .map((column) => ({
+                dataType: column.unit.dataType,
+                name: column.name,
+                label: column.label,
+              }))}
             onCancel={() => setAddModalOpen(false)}
             onSubmit={async (data) => {
               console.log(data);
@@ -292,11 +294,13 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             initialData={
               editRow as Record<Extract<keyof T, string>, number | string>
             }
-            schema={columns.map((column) => ({
-              dataType: column.unit.dataType,
-              name: column.name,
-              label: column.label,
-            }))}
+            schema={columns
+              .filter((column) => !isDerivedColumn(dataStoreName, column))
+              .map((column) => ({
+                dataType: column.unit.dataType,
+                name: column.name,
+                label: column.label,
+              }))}
             onCancel={() => {
               setEditRow(undefined);
               setEditModalOpen(false);

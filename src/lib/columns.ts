@@ -131,6 +131,13 @@ export const Unit: Record<string, UnitDefinition> = {
   },
 };
 
+export function isDerivedColumn<T extends BuildComponentStoreName>(
+  componentType: T,
+  column: ColumnDefinition<T>
+) {
+  return column.name === "price";
+}
+
 export const CpuColumns: Array<ColumnDefinition<"cpu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
