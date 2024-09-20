@@ -4,11 +4,12 @@ import {
   LinkIcon,
   PencilIcon,
 } from "@primer/octicons-react";
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button, ButtonVariant } from "components/Button";
+import { Form } from "components/Form";
 import { Input, InputVariant } from "components/Input";
-import { BuildContext } from "context/build";
+import { Modal } from "components/Modal";
 import { useRetailerLinkMutations } from "hooks/useRetailerLinks";
 import { BuildComponentStoreName } from "lib/build";
 import { RetailerProductLinkSchema } from "lib/db";
@@ -20,6 +21,7 @@ import {
 import { makeClassNamePrimitives } from "lib/styles";
 
 import classNames from "./RetailerLinkWithHistory.module.css";
+import { RetailerByHostName, RetailerLabel } from "lib/retailer";
 
 const { Div, Span } = makeClassNamePrimitives(classNames);
 
@@ -34,7 +36,7 @@ export const RetailerLinkWithHistory = (
 ) => {
   const { componentType, componentId, link } = props;
 
-  const { build } = useContext(BuildContext);
+  const [editStoreLinkModalOpen, setEditStoreLinkModalOpen] = useState(false);
 
   const { toggleFavoriteRetailerLink, updateRetailerLink } =
     useRetailerLinkMutations();
@@ -141,7 +143,10 @@ export const RetailerLinkWithHistory = (
           {link.isFavorite && <HeartFillIcon size={24} />}
           {!link.isFavorite && <HeartIcon size={24} />}
         </Button>
-        <Button onClick={() => {}} variant={ButtonVariant.INLINE}>
+        <Button
+          onClick={() => setEditStoreLinkModalOpen(true)}
+          variant={ButtonVariant.INLINE}
+        >
           <PencilIcon size={24} />
         </Button>
       </Div.LinkHeading>
@@ -183,6 +188,71 @@ export const RetailerLinkWithHistory = (
           </Div.LinkHistory>
         ))}
       </Div.LinkHistoryContainer>
+
+      {editStoreLinkModalOpen && (
+        <Modal>
+          <h2 className={classNames.editLinkModalTitle}>Edit Store Link</h2>
+          <Form
+            initialData={
+              link as Pick<RetailerProductLinkSchema, "url" | "retailerName">
+            }
+            schema={[
+              {
+                dataType: "text",
+                name: "url",
+                label: "Product Listing URL",
+              },
+              {
+                dataType: "text",
+                name: "retailerName",
+                label: "Store Name",
+              },
+            ]}
+            onCancel={() => setEditStoreLinkModalOpen(false)}
+            onInputBlur={(fieldName, value, setField) => {
+              if (fieldName !== "url") {
+                return;
+              }
+
+              if (!value || typeof value !== "string") {
+                return;
+              }
+
+              try {
+                const url = new URL(value);
+                const retailer = RetailerByHostName[url.hostname];
+
+                if (retailer) {
+                  setField("retailerName", RetailerLabel[retailer]);
+                } else {
+                  // If we don't recognize the retailer, just use the hostname
+                  setField("retailerName", url.hostname);
+                }
+              } catch (e) {
+                return;
+              }
+            }}
+            onSubmit={async (data) => {
+              if (!data.url || !data.retailerName) {
+                // TODO visual form validation errors
+                return;
+              }
+
+              await updateRetailerLink({
+                componentType,
+                componentId,
+                id: link.id,
+                changes: {
+                  retailerName: data.retailerName,
+                  url: data.url,
+                },
+              });
+
+              setEditStoreLinkModalOpen(false);
+            }}
+          />
+        </Modal>
+      )}
     </Div.LinkContainer>
   );
 };

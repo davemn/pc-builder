@@ -62,3 +62,8 @@ input.priceInput::-webkit-inner-spin-button {
 .priceChangeNegative {
   color: var(--negative100);
 }
+
+.editLinkModalTitle {
+  font-size: var(--fontSizeTitle);
+  margin-bottom: 20px;
+}
