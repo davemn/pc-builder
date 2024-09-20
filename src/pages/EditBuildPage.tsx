@@ -106,7 +106,7 @@ const BuildComponentSlot = <T extends BuildComponentStoreName>(
           type="button"
           variant={getButtonVariant(component, index)}
         >
-          {component.name}
+          {component.brand} {component.name}
         </Button>
       ))}
       {(maxSlots === -1 || assignedSlots.length < maxSlots) && (
