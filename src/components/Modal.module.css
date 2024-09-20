@@ -1,4 +1,5 @@
 .modalOverlay {
+  composes: appScrollbar from global;
   position: absolute;
   top: 0;
   left: 0;
@@ -25,6 +26,7 @@
 }
 
 .variantRightSide {
+  composes: appScrollbar from global;
   width: 27vw;
 
   /* align-self: flex-end;

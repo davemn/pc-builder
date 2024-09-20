@@ -28,6 +28,7 @@
 }
 
 .sidebar {
+  composes: appScrollbar from global;
   grid-column: 1 / 2;
   padding: 20px;
   overflow-y: auto;
@@ -38,6 +39,7 @@
 }
 
 .content {
+  composes: appScrollbar from global;
   grid-column: 2 / 3;
   padding: 20px;
   overflow-y: auto;

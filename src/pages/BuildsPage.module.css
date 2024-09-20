@@ -13,7 +13,7 @@
 }
 
 .scrollContainer {
-  /* width: 100%; */
+  composes: appScrollbar from global;
   max-width: 100%;
   overflow-x: auto;
   display: flex;

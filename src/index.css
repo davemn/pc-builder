@@ -108,3 +108,21 @@ label {
   font-size: var(--fontSizeLabel);
   color: var(--light90);
 }
+
+.appScrollbar::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.appScrollbar::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+
+  box-shadow: inset 0 0 12px var(--light80);
+  border: 4px solid transparent;
+}
+.appScrollbar::-webkit-scrollbar-thumb:hover {
+  box-shadow: inset 0 0 12px var(--light90);
+}
+.appScrollbar::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
+  border: 4px solid transparent;
+}

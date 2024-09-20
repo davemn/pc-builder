@@ -138,14 +138,14 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           >
             {selectedRowIsCompatible ? "Selected" : "Incompatible with build"}
           </h2>
-          <Div.ScrollContainer
+          <Div.TableScrollContainer
             style={{
               border: selectedRowIsCompatible
                 ? "2px solid var(--accent100)"
                 : "2px solid var(--negative100)",
             }}
           >
-            <Div.SelectedRow
+            <Div.Table
               style={{
                 gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
               }}
@@ -166,8 +166,8 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                     : ButtonVariant.NEGATIVE
                 }
               />
-            </Div.SelectedRow>
-          </Div.ScrollContainer>
+            </Div.Table>
+          </Div.TableScrollContainer>
         </>
       )}
 
@@ -180,7 +180,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       </Div.TableFilters>
 
       {/* Rows that are compatible with the current build */}
-      <Div.ScrollContainer>
+      <Div.TableScrollContainer>
         <Div.Table
           style={{
             gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
@@ -217,7 +217,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             </Div.EmptyState>
           )}
         </Div.Table>
-      </Div.ScrollContainer>
+      </Div.TableScrollContainer>
 
       {/* Rows that are incompatible with the current build */}
       {incompatibleRowIds.length > 0 && (
@@ -225,7 +225,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           <h2 className={classNames.tableName}>
             Incompatible {componentTypePluralLabel}
           </h2>
-          <Div.ScrollContainer>
+          <Div.TableScrollContainer>
             <Div.Table
               style={{
                 gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
@@ -253,7 +253,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 </Div.EmptyState>
               )}
             </Div.Table>
-          </Div.ScrollContainer>
+          </Div.TableScrollContainer>
         </>
       )}
 

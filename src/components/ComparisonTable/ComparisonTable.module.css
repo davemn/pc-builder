@@ -13,10 +13,13 @@
   margin-right: auto;
 }
 
-.scrollContainer {
+.tableScrollContainer {
+  composes: appScrollbar from global;
   width: 100%;
   overflow-x: auto;
   margin-bottom: 65px;
+  /* ensures that the scrollbar track color matches the table background color */
+  background-color: var(--dark10);
 }
 
 .compatibleRowBadge,
@@ -31,10 +34,6 @@
 
 .incompatibleRowBadge {
   background-color: var(--negative100);
-}
-
-.selectedRow {
-  display: grid;
 }
 
 .tableFilters {
