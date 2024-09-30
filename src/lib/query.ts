@@ -228,3 +228,13 @@ export function toggleFavoriteRetailerLink(body: {
     body,
   });
 }
+
+export function getUniqueComponentColumnValues(body: {
+  componentType: BuildComponentStoreName;
+  columnName: string;
+}): Promise<string[] | number[]> {
+  return window.UserDataModel.dispatch({
+    type: "getUniqueComponentColumnValues",
+    body,
+  });
+}

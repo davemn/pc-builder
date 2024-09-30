@@ -24,8 +24,12 @@ function snakeCaseToCamelCase(str: string) {
 }
 
 function camelCaseToSnakeCase(str: string) {
-  // insert an underscore between adjacent characters with differing cases
-  return str.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  // insert an underscore around groups of consecutive digits, and
+  // between adjacent characters with differing cases
+  return str
+    .replace(/([0-9]+)/g, "_$1_")
+    .replace(/(?<=[a-z])([A-Z])/g, "_$1")
+    .toLowerCase();
 }
 
 function addWhereClauses(query: KnexNamespace.QueryBuilder, conditions: IRow) {
@@ -146,6 +150,71 @@ const InputRowMapper = {
 
     return inputRow;
   },
+  mobo: (row: IRow) => {
+    const inputRow: IRow = {};
+
+    for (const key in row) {
+      let newKey: string;
+
+      switch (key) {
+        default:
+          newKey = camelCaseToSnakeCase(key);
+          break;
+        case "m2Slots":
+          newKey = "m2_slots";
+          break;
+        case "pcie5x16Slots":
+          newKey = "pcie_5_x16_slots";
+          break;
+        case "pcie5x8Slots":
+          newKey = "pcie_5_x8_slots";
+          break;
+        case "pcie5x4Slots":
+          newKey = "pcie_5_x4_slots";
+          break;
+        case "pcie5x2Slots":
+          newKey = "pcie_5_x2_slots";
+          break;
+        case "pcie5x1Slots":
+          newKey = "pcie_5_x1_slots";
+          break;
+        case "pcie4x16Slots":
+          newKey = "pcie_4_x16_slots";
+          break;
+        case "pcie4x8Slots":
+          newKey = "pcie_4_x8_slots";
+          break;
+        case "pcie4x4Slots":
+          newKey = "pcie_4_x4_slots";
+          break;
+        case "pcie4x2Slots":
+          newKey = "pcie_4_x2_slots";
+          break;
+        case "pcie4x1Slots":
+          newKey = "pcie_4_x1_slots";
+          break;
+        case "pcie3x16Slots":
+          newKey = "pcie_3_x16_slots";
+          break;
+        case "pcie3x8Slots":
+          newKey = "pcie_3_x8_slots";
+          break;
+        case "pcie3x4Slots":
+          newKey = "pcie_3_x4_slots";
+          break;
+        case "pcie3x2Slots":
+          newKey = "pcie_3_x2_slots";
+          break;
+        case "pcie3x1Slots":
+          newKey = "pcie_3_x1_slots";
+          break;
+      }
+
+      inputRow[newKey] = row[key];
+    }
+
+    return inputRow;
+  },
 };
 
 export class UserDataModel {
@@ -159,6 +228,31 @@ export class UserDataModel {
     "mobo",
     "cooler",
   ];
+
+  static getComponentTableName(componentType: unknown) {
+    // explicit mapping instead of camelCaseToSnakeCase() to allow
+    // for custom table names (e.g. m2_storage instead of m_2_storage)
+    switch (componentType) {
+      case "cpu":
+        return "cpu";
+      case "gpu":
+        return "gpu";
+      case "ram":
+        return "ram";
+      case "m2Storage":
+        return "m2_storage";
+      case "sataStorage":
+        return "sata_storage";
+      case "psu":
+        return "psu";
+      case "mobo":
+        return "mobo";
+      case "cooler":
+        return "cooler";
+      default:
+        throw new Error(`Invalid component type: ${componentType}`);
+    }
+  }
 
   static initMain() {
     if (!ipcMain || !app) {
@@ -291,11 +385,7 @@ export class UserDataModel {
     // optional filter by component type
     let componentTableName: string | null = null;
     if (typeof componentType === "string") {
-      componentTableName = camelCaseToSnakeCase(componentType);
-
-      if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
-        throw new Error(`Invalid table name: "${componentTableName}"`);
-      }
+      componentTableName = UserDataModel.getComponentTableName(componentType);
     }
 
     const db = await connectTo(DatabaseName.USER_DATA);
@@ -356,11 +446,7 @@ export class UserDataModel {
     orderBy: rawOrderBy,
     columns: rawColumns,
   }: IpcAction["body"]) {
-    const tableName = camelCaseToSnakeCase(rawTableName);
-
-    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
-      throw new Error(`Invalid table name: "${tableName}"`);
-    }
+    const tableName = UserDataModel.getComponentTableName(rawTableName);
 
     let columns: string[] | undefined;
 
@@ -563,11 +649,8 @@ export class UserDataModel {
       }
     }
 
-    const componentTableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
-      throw new Error(`Invalid table name: "${componentTableName}"`);
-    }
+    const componentTableName =
+      UserDataModel.getComponentTableName(componentType);
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
@@ -620,11 +703,7 @@ export class UserDataModel {
   }
 
   async createComponent({ componentType, component }: IpcAction["body"]) {
-    const tableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
-      throw new Error(`Invalid table name: "${tableName}"`);
-    }
+    const tableName = UserDataModel.getComponentTableName(componentType);
 
     if (typeof component !== "object" || component === null) {
       throw new Error("Invalid component definition");
@@ -639,11 +718,7 @@ export class UserDataModel {
   }
 
   async updateComponent({ componentType, id, changes }: IpcAction["body"]) {
-    const tableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(tableName)) {
-      throw new Error(`Invalid table name: "${tableName}"`);
-    }
+    const tableName = UserDataModel.getComponentTableName(componentType);
 
     if (typeof id !== "number" || id < 0) {
       throw new Error("Invalid component ID");
@@ -663,11 +738,8 @@ export class UserDataModel {
     componentType,
     componentId,
   }: IpcAction["body"]) {
-    const componentTableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
-      throw new Error(`Invalid table name: "${componentTableName}"`);
-    }
+    const componentTableName =
+      UserDataModel.getComponentTableName(componentType);
 
     if (typeof componentId !== "number" || componentId < 0) {
       throw new Error("Invalid component ID");
@@ -700,11 +772,8 @@ export class UserDataModel {
     retailerName,
     url,
   }: IpcAction["body"]) {
-    const componentTableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
-      throw new Error(`Invalid table name: "${componentTableName}"`);
-    }
+    const componentTableName =
+      UserDataModel.getComponentTableName(componentType);
 
     if (typeof componentId !== "number" || componentId < 0) {
       throw new Error("Invalid component ID");
@@ -774,11 +843,8 @@ export class UserDataModel {
     componentId,
     linkId,
   }: IpcAction["body"]) {
-    const componentTableName = camelCaseToSnakeCase(componentType);
-
-    if (!UserDataModel.ComponentTableNames.includes(componentTableName)) {
-      throw new Error(`Invalid table name: "${componentTableName}"`);
-    }
+    const componentTableName =
+      UserDataModel.getComponentTableName(componentType);
 
     if (typeof componentId !== "number" || componentId < 0) {
       throw new Error("Invalid component ID");
@@ -809,6 +875,34 @@ export class UserDataModel {
         .where({ id: linkId })
         .update({ is_favorite: true });
     });
+  }
+
+  async getUniqueComponentColumnValues({
+    componentType,
+    columnName,
+  }: IpcAction["body"]) {
+    if (typeof columnName !== "string" || !columnName) {
+      throw new Error("Invalid column name");
+    }
+
+    // reject columnName if it contains any special characters
+    if (!/^[a-zA-Z0-9_]+$/.test(columnName)) {
+      throw new Error(`Invalid column name: ${columnName}`);
+    }
+
+    const columnIdentifier = Object.keys(
+      InputRowMapper.mobo({ [columnName]: "" })
+    )[0];
+
+    const tableName = UserDataModel.getComponentTableName(componentType);
+
+    const db = await connectTo(DatabaseName.USER_DATA);
+
+    const rows = await db(tableName)
+      .distinct(columnIdentifier)
+      .orderBy(columnIdentifier, "asc");
+
+    return rows.map((row) => row[columnIdentifier]);
   }
 }
 

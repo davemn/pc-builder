@@ -3,12 +3,12 @@ import React, { useContext, useState } from "react";
 import { Button, ButtonVariant } from "components/Button";
 import { Form } from "components/Form";
 import { Modal } from "components/Modal";
-import { SortControls } from "components/SortControls";
+import { TableFilters } from "components/TableFilters";
 import { BuildContext } from "context/build";
 import { useComponentMutations } from "hooks/useComponent";
 import { useComponentIds } from "hooks/useComponentIds";
 import { BuildComponentMeta, BuildComponentStoreName } from "lib/build";
-import { ColumnDefinition, isDerivedColumn } from "lib/columns";
+import { isDerivedColumn } from "lib/columns";
 import { SortDirection } from "lib/constants";
 import { Schema } from "lib/db";
 import * as Query from "lib/query";
@@ -172,8 +172,9 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       )}
 
       <Div.TableFilters>
-        <SortControls
+        <TableFilters
           columns={columns}
+          componentType={dataStoreName}
           onChangeSort={setSortBy}
           sortBy={sortBy}
         />

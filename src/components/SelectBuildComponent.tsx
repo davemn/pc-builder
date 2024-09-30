@@ -38,7 +38,7 @@ export const SelectBuildComponent = (props: SelectBuildComponentProps) => {
 
   const { build } = useContext(BuildContext);
 
-  const { assignComponentToBuild, removeComponentFromBuild, updateBuild } =
+  const { assignComponentToBuild, removeComponentFromBuild } =
     useBuildMutations();
 
   const selectedBuildComponent = build?.components[componentType].find(

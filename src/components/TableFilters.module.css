@@ -1,0 +1,100 @@
+.container {
+  display: inline-block;
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+}
+
+.buttonIconContainer {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+
+  background-color: var(--dark10);
+  border-radius: 24px;
+}
+.buttonIconContainer:hover {
+  background-color: var(--light80);
+}
+
+.modalContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.menuItemLabel {
+  color: var(--light80);
+  font-size: var(--fontSizeBody);
+  padding: 0 20px;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  line-height: 1; /* ensures height of button matches font size */
+  color: var(--light90);
+  font-size: var(--fontSizeLabel);
+  padding: 15px 20px;
+  /* padding-top: 20px; */
+}
+/* .menuButton:first-child {
+  margin-top: 10px;
+} */
+/* .menuButton:last-child {
+  margin-bottom: 10px;
+} */
+.menuButton:hover {
+  cursor: pointer;
+  color: var(--light100);
+  outline: 2px solid var(--accent0);
+}
+
+.filterValue {
+  margin-left: auto;
+  color: var(--light80);
+  text-align: right;
+}
+.menuButton:hover .filterValue {
+  color: var(--light90);
+}
+
+.menuButtonPlaceholder {
+  padding: 15px 20px;
+}
+
+.skeleton {
+  display: inline-block;
+  width: 100%;
+  height: var(--fontSizeLabel);
+  vertical-align: top;
+
+  border-radius: 4px;
+  background-color: var(--light80);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--light80),
+    transparent
+  );
+  background-size: 200% 200%;
+  animation: skeleton 1.8s infinite;
+}
+
+/* skeleton animation */
+@keyframes skeleton {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: -100% 50%;
+  }
+}
