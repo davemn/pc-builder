@@ -69,9 +69,9 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
 
   const allRowIds = queryData.allComponentIds;
   const columns = BuildComponentMeta[dataStoreName].columns;
-  const selectedRowIsCompatible = queryData.buildCompatibleComponentIds.some(
-    (id) => id === selectedRowId
-  );
+  const selectedRowIsCompatible =
+    isPending ||
+    queryData.buildCompatibleComponentIds.some((id) => id === selectedRowId);
   const unselectedRowIds = queryData.buildCompatibleComponentIds.filter(
     (id) => id !== selectedRowId
   );
@@ -100,19 +100,6 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       setIsEditingSelectedRow(true);
     }
   };
-
-  if (isPending || isFetching) {
-    return (
-      <Div.Container>
-        <Div.TableName>
-          <h2>{componentTypePluralLabel}</h2>
-          <Button disabled onClick={() => {}} variant={ButtonVariant.ACCENT}>
-            Add
-          </Button>
-        </Div.TableName>
-      </Div.Container>
-    );
-  }
 
   return (
     <Div.Container>
@@ -205,7 +192,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             <Div.EmptyState
               style={{ gridColumn: `1 / span ${columns.length + 2}` }}
             >
-              Nothing added
+              {isPending ? "Loading..." : "Nothing added"}
             </Div.EmptyState>
           )}
           {allRowIds.length > 0 && unselectedRowIds.length === 0 && (
@@ -250,7 +237,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 <Div.EmptyState
                   style={{ gridColumn: `1 / span ${columns.length + 2}` }}
                 >
-                  Nothing added
+                  {isPending ? "Loading..." : "Nothing added"}
                 </Div.EmptyState>
               )}
             </Div.Table>

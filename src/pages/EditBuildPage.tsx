@@ -249,6 +249,7 @@ const EditBuildPageInner = (props: EditBuildPageInnerProps) => {
       content={
         selectedComponentType && (
           <SelectBuildComponent
+            key={selectedComponentType}
             edgeId={selectedEdgeId}
             componentType={selectedComponentType}
             onRemove={() => {

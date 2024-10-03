@@ -3,7 +3,18 @@ export enum SortDirection {
   DESC = "desc",
 }
 
+/** @deprecated */
 export const SortDirectionLabel = {
+  [SortDirection.ASC]: "Low to High",
+  [SortDirection.DESC]: "High to Low",
+};
+
+export const TextSortDirectionLabel = {
+  [SortDirection.ASC]: "A to Z",
+  [SortDirection.DESC]: "Z to A",
+};
+
+export const NumericSortDirectionLabel = {
   [SortDirection.ASC]: "Low to High",
   [SortDirection.DESC]: "High to Low",
 };
