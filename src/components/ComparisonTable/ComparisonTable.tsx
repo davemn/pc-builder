@@ -50,6 +50,10 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const [sortBy, setSortBy] = useState<
     Array<{ columnName: string; direction: SortDirection }>
   >([]);
+  const [filterBy, setFilterBy] = useState<{
+    [columnName: string]: string[] | number[];
+  }>({} as any);
+
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [priceHistoryModalOpen, setPriceHistoryModalOpen] = useState(false);
@@ -62,7 +66,8 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const { isFetching, isPending, ...queryData } = useComponentIds(
     dataStoreName,
     build,
-    sortBy
+    sortBy,
+    filterBy
   );
 
   const { createComponent, updateComponent } = useComponentMutations();
@@ -162,6 +167,8 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
         <TableFilters
           columns={columns}
           componentType={dataStoreName}
+          filterBy={filterBy}
+          onChangeFilter={setFilterBy}
           onChangeSort={setSortBy}
           sortBy={sortBy}
         />

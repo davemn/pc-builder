@@ -40,7 +40,8 @@ async function asyncReduce<T, U>(
 export function useComponentIds<T extends BuildComponentStoreName>(
   componentType: T,
   build: ExtendedBuildSchema | null,
-  orderBy?: Query.QueryOrderBy
+  orderBy?: Query.QueryOrderBy,
+  filterBy?: Query.QueryWhereConditions
 ): {
   allComponentIds: Array<number>;
   buildCompatibleComponentIds: Array<number>;
@@ -63,7 +64,7 @@ export function useComponentIds<T extends BuildComponentStoreName>(
     queryFn: async () => {
       const componentIds = await Query.getComponentIdsWhere(
         componentType,
-        {},
+        filterBy ?? {},
         orderBy
       );
 

@@ -107,11 +107,11 @@ interface LabelledValue {
 }
 
 interface OptionsMenuItemProps {
-  checkedValues: Array<string | number>;
+  checkedValues: string[] | number[];
   isDisabled?: boolean;
   isExclusive: boolean;
   name: string;
-  onChangeCheckedValues: (values: Array<string | number>) => void;
+  onChangeCheckedValues: (values: string[] | number[]) => void;
   labelledValues: Array<LabelledValue>;
 }
 
@@ -129,7 +129,8 @@ const OptionsMenuButton = (props: OptionsMenuItemProps) => {
 
   const onCheckValue = (newValue: string | number) => {
     let newCheckedValues;
-    if (checkedValues.includes(newValue)) {
+
+    if (checkedValues.some((v) => v === newValue)) {
       newCheckedValues = isExclusive
         ? []
         : checkedValues.filter((v) => v !== newValue);
@@ -264,22 +265,22 @@ const SortByMenuButton = <T extends BuildComponentStoreName>(
 interface ColumnFilterMenuButtonProps<T extends BuildComponentStoreName> {
   column: ColumnDefinition<T>;
   componentType: T;
+  filterBy: ActiveFilterColumn;
+  onChangeFilter: (filterBy: ActiveFilterColumn) => void;
 }
 
 const ColumnFilterMenuButton = <T extends BuildComponentStoreName>(
   props: ColumnFilterMenuButtonProps<T>
 ) => {
-  const { column, componentType } = props;
+  const { column, componentType, filterBy, onChangeFilter } = props;
 
   const [isLoading, setIsLoading] = useState(true);
 
-  // TODO move this state to props, control from parent
-  const [activeFilterValues, setActiveFilterValues] = useState<
-    Array<string | number>
-  >([]);
   const [allFilterValues, setAllFilterValues] = useState<Array<LabelledValue>>(
     []
   );
+
+  const activeFilterValues = filterBy[column.name] ?? [];
 
   useEffect(() => {
     const fetchValues = async () => {
@@ -347,18 +348,21 @@ const ColumnFilterMenuButton = <T extends BuildComponentStoreName>(
       isExclusive={false}
       labelledValues={allFilterValues}
       name={column.label}
-      onChangeCheckedValues={setActiveFilterValues}
+      onChangeCheckedValues={(values) =>
+        onChangeFilter({ ...filterBy, [column.name]: values })
+      }
     />
   );
 };
 
 type ActiveSortColumn = { columnName: string; direction: SortDirection };
-type ActiveFilterColumn = { columnName: string; values: string[] | number[] };
+type ActiveFilterColumn = { [columnName: string]: string[] | number[] };
 
 interface TableFiltersProps<T extends BuildComponentStoreName> {
   columns: Array<ColumnDefinition<T>>;
   componentType: T;
-  // TODO control <SortByMenuButton /> and <ColumnFilterMenuButton /> state
+  filterBy: ActiveFilterColumn;
+  onChangeFilter: (filterBy: ActiveFilterColumn) => void;
   onChangeSort: (sortBy: Array<ActiveSortColumn>) => void;
   sortBy: Array<ActiveSortColumn>;
 }
@@ -366,7 +370,14 @@ interface TableFiltersProps<T extends BuildComponentStoreName> {
 export const TableFilters = <T extends BuildComponentStoreName>(
   props: TableFiltersProps<T>
 ) => {
-  const { columns, componentType, onChangeSort, sortBy } = props;
+  const {
+    columns,
+    componentType,
+    filterBy,
+    onChangeFilter,
+    onChangeSort,
+    sortBy,
+  } = props;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -398,6 +409,8 @@ export const TableFilters = <T extends BuildComponentStoreName>(
               key={column.name}
               column={column}
               componentType={componentType}
+              filterBy={filterBy}
+              onChangeFilter={onChangeFilter}
             />
           ))}
         </>
