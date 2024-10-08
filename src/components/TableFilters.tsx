@@ -3,7 +3,7 @@ import { createRef, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Modal, ModalVariant } from "components/Modal";
 import { BuildComponentStoreName } from "lib/build";
-import { ColumnDefinition, Unit } from "lib/columns";
+import { ColumnDefinition } from "lib/columns";
 import {
   NumericSortDirectionLabel,
   SortDirection,
@@ -101,9 +101,39 @@ export const PopoverMenu = (props: PopoverMenuProps) => {
   );
 };
 
-interface LabelledValue {
+function toggleValueIsChecked(
+  checkedValues: string[] | number[],
+  value: string | number,
+  isExclusive: boolean
+): string[] | number[] {
+  // Even those the bodies of these cases are almost identical, they
+  // need to be separate to allow for static type analysis.
+  if (typeof value === "number") {
+    const values = checkedValues.filter((v) => typeof v === "number");
+    if (values.includes(value)) {
+      return isExclusive ? [] : values.filter((v) => v !== value);
+    } else {
+      return isExclusive ? [value] : [...values, value];
+    }
+  } else if (typeof value === "string") {
+    const values = checkedValues.filter((v) => typeof v === "string");
+    if (values.includes(value)) {
+      return isExclusive ? [] : values.filter((v) => v !== value);
+    } else {
+      return isExclusive ? [value] : [...values, value];
+    }
+  }
+
+  return [] as never[];
+}
+
+interface LabelledStringValue {
   label?: string;
-  value: string | number;
+  value: string;
+}
+interface LabelledNumberValue {
+  label?: string;
+  value: number;
 }
 
 interface OptionsMenuItemProps {
@@ -112,7 +142,7 @@ interface OptionsMenuItemProps {
   isExclusive: boolean;
   name: string;
   onChangeCheckedValues: (values: string[] | number[]) => void;
-  labelledValues: Array<LabelledValue>;
+  labelledValues: LabelledStringValue[] | LabelledNumberValue[];
 }
 
 const OptionsMenuButton = (props: OptionsMenuItemProps) => {
@@ -128,17 +158,11 @@ const OptionsMenuButton = (props: OptionsMenuItemProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const onCheckValue = (newValue: string | number) => {
-    let newCheckedValues;
-
-    if (checkedValues.some((v) => v === newValue)) {
-      newCheckedValues = isExclusive
-        ? []
-        : checkedValues.filter((v) => v !== newValue);
-    } else {
-      newCheckedValues = isExclusive
-        ? [newValue]
-        : [...checkedValues, newValue];
-    }
+    const newCheckedValues = toggleValueIsChecked(
+      checkedValues,
+      newValue,
+      isExclusive
+    );
 
     if (isExclusive) {
       setIsMenuOpen(false);
@@ -177,7 +201,7 @@ const OptionsMenuButton = (props: OptionsMenuItemProps) => {
       renderMenu={() =>
         labelledValues.map(({ label, value }) => (
           <MenuButton
-            isChecked={checkedValues.includes(value)}
+            isChecked={checkedValues.some((v) => v === value)}
             key={label ?? `${value}`}
             name={label ?? `${value}`}
             onClick={() => onCheckValue(value)}
@@ -276,54 +300,63 @@ const ColumnFilterMenuButton = <T extends BuildComponentStoreName>(
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [allFilterValues, setAllFilterValues] = useState<Array<LabelledValue>>(
-    []
-  );
+  const [allFilterValues, setAllFilterValues] = useState<
+    LabelledStringValue[] | LabelledNumberValue[]
+  >([]);
 
   const activeFilterValues = filterBy[column.name] ?? [];
 
   useEffect(() => {
     const fetchValues = async () => {
-      let formattedValues: LabelledValue[];
+      const columnUnit = column.unit;
 
-      switch (column.unit) {
-        case Unit.CURRENCY:
-          formattedValues = [
-            { value: "Under $100" },
-            { value: "$100 - $250" },
-            { value: "$250 - $500" },
-            { value: "Over $500" },
-          ];
+      if (columnUnit.dataType === "currency") {
+        return [
+          { value: "Under $100" },
+          { value: "$100 - $250" },
+          { value: "$250 - $500" },
+          { value: "Over $500" },
+        ] as LabelledStringValue[];
+      }
+
+      // Not relying on a query hook here because there are too many places that
+      // query would need to be invalidated.
+      const columnValues = await Query.getUniqueComponentColumnValues({
+        componentType,
+        columnName: column.name,
+      });
+
+      let formattedValues;
+
+      switch (columnUnit.dataType) {
+        case "numeric":
+          formattedValues = columnValues
+            .filter((v) => typeof v === "number")
+            .map((columnValue) => {
+              return {
+                label: columnUnit.format(columnValue),
+                value: columnValue,
+              };
+            });
+          break;
+        case "text":
+          formattedValues = columnValues
+            .filter((v) => typeof v === "string")
+            .map((columnValue) => {
+              return {
+                label: columnUnit.format(columnValue),
+                value: columnValue,
+              };
+            });
           break;
         default:
-          // Not relying on a query hook here because there are too many places that
-          // query would need to be invalidated.
-          const columnValues = await Query.getUniqueComponentColumnValues({
-            componentType,
-            columnName: column.name,
-          });
-          formattedValues = columnValues.map((columnValue) => {
-            switch (column.unit.dataType) {
-              case "numeric":
-              default:
-                return {
-                  label: column.unit.format(parseFloat(columnValue as string)),
-                  value: columnValue,
-                };
-              case "text":
-                return {
-                  label: column.unit.format(`${columnValue}`),
-                  value: columnValue,
-                };
-            }
-          });
+          formattedValues = [] as never[];
           break;
       }
 
       return formattedValues;
     };
 
-    // fetchValues();
     Promise.all([
       fetchValues(),
       /* force a minimum loading time so placeholder displays fully */
