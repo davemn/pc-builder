@@ -63,12 +63,13 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const { pluralName: componentTypePluralLabel } =
     BuildComponentMeta[dataStoreName];
 
-  const { isFetching, isPending, ...queryData } = useComponentIds(
-    dataStoreName,
+  const { isFetching, isPending, ...queryData } = useComponentIds({
+    componentType: dataStoreName,
     build,
-    sortBy,
-    filterBy
-  );
+    orderBy: sortBy,
+    filterBy,
+    includeComponentId: selectedRowId,
+  });
 
   const { createComponent, updateComponent } = useComponentMutations();
 

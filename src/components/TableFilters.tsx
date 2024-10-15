@@ -381,9 +381,15 @@ const ColumnFilterMenuButton = <T extends BuildComponentStoreName>(
       isExclusive={false}
       labelledValues={allFilterValues}
       name={column.label}
-      onChangeCheckedValues={(values) =>
-        onChangeFilter({ ...filterBy, [column.name]: values })
-      }
+      onChangeCheckedValues={(values) => {
+        if (values.length === 0) {
+          const newFilterBy = { ...filterBy };
+          delete newFilterBy[column.name];
+          onChangeFilter(newFilterBy);
+        } else {
+          onChangeFilter({ ...filterBy, [column.name]: values });
+        }
+      }}
     />
   );
 };

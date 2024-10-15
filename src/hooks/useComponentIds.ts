@@ -37,20 +37,32 @@ async function asyncReduce<T, U>(
   return acc;
 }
 
-export function useComponentIds<T extends BuildComponentStoreName>(
-  componentType: T,
-  build: ExtendedBuildSchema | null,
-  orderBy?: Query.QueryOrderBy,
-  filterBy?: Query.QueryWhereConditions
-): {
+interface UseComponentIdsArgs<T extends BuildComponentStoreName> {
+  componentType: T;
+  build: ExtendedBuildSchema | null;
+  orderBy: Query.QueryOrderBy;
+  filterBy: Query.QueryWhereConditions;
+  includeComponentId: number | undefined;
+}
+
+interface UseComponentIdsReturnType {
   allComponentIds: Array<number>;
   buildCompatibleComponentIds: Array<number>;
   buildIncompatibleComponentIds: Array<number>;
   isError: boolean;
   isFetching: boolean;
   isPending: boolean;
-} {
+}
+
+export function useComponentIds<T extends BuildComponentStoreName>(
+  opts: UseComponentIdsArgs<T>
+): UseComponentIdsReturnType {
+  const { componentType, build, orderBy, filterBy, includeComponentId } = opts;
+
   const queryClient = useQueryClient();
+
+  const hasActiveOrderBy = (orderBy ?? []).length > 0;
+  const hasActiveFilterBy = Object.keys(filterBy ?? {}).length > 0;
 
   const {
     data,
@@ -60,13 +72,23 @@ export function useComponentIds<T extends BuildComponentStoreName>(
   } = useQuery({
     // Examples:
     // ["cpu", [{ columnName : "price", direction: "asc" }, { columnName: "name", direction: "desc" }]]
-    queryKey: [componentType, ...(orderBy ? [orderBy] : [])],
+    queryKey: [
+      componentType,
+      {
+        orderBy: hasActiveOrderBy ? orderBy : undefined,
+        filterBy: hasActiveFilterBy ? filterBy : undefined,
+      },
+    ],
     queryFn: async () => {
-      const componentIds = await Query.getComponentIdsWhere(
+      const queryComponentIds = await Query.getComponentIdsWhere(
         componentType,
         filterBy ?? {},
         orderBy
       );
+      const componentIds =
+        includeComponentId !== undefined
+          ? Array.from(new Set([includeComponentId, ...queryComponentIds]))
+          : queryComponentIds;
 
       const componentIdIsCompatible = async (id: number) => {
         const [component] = await Query.getComponentsWhere(componentType, {
