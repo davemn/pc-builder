@@ -120,11 +120,69 @@ const OutputRowMapper = {
   },
 };
 
+const InputColumnMapper = {
+  forType: (componentType: string) => {
+    switch (componentType) {
+      case "mobo":
+        return InputColumnMapper.mobo;
+      default:
+        return InputColumnMapper.generic;
+    }
+  },
+  generic: (column: string) => camelCaseToSnakeCase(column),
+  mobo: (column: string) => {
+    switch (column) {
+      case "m2Slots":
+        return "m2_slots";
+      case "pcie5x16Slots":
+        return "pcie_5_x16_slots";
+      case "pcie5x8Slots":
+        return "pcie_5_x8_slots";
+      case "pcie5x4Slots":
+        return "pcie_5_x4_slots";
+      case "pcie5x2Slots":
+        return "pcie_5_x2_slots";
+      case "pcie5x1Slots":
+        return "pcie_5_x1_slots";
+      case "pcie4x16Slots":
+        return "pcie_4_x16_slots";
+      case "pcie4x8Slots":
+        return "pcie_4_x8_slots";
+      case "pcie4x4Slots":
+        return "pcie_4_x4_slots";
+      case "pcie4x2Slots":
+        return "pcie_4_x2_slots";
+      case "pcie4x1Slots":
+        return "pcie_4_x1_slots";
+      case "pcie3x16Slots":
+        return "pcie_3_x16_slots";
+      case "pcie3x8Slots":
+        return "pcie_3_x8_slots";
+      case "pcie3x4Slots":
+        return "pcie_3_x4_slots";
+      case "pcie3x2Slots":
+        return "pcie_3_x2_slots";
+      case "pcie3x1Slots":
+        return "pcie_3_x1_slots";
+      default:
+        return InputColumnMapper.generic(column);
+    }
+  },
+};
+
 const InputRowMapper = {
+  forType: (componentType: string) => {
+    switch (componentType) {
+      case "mobo":
+        return InputRowMapper.mobo;
+      default:
+        return InputRowMapper.generic;
+    }
+  },
   generic: (row: IRow) => {
     const inputRow: IRow = {};
     for (const key in row) {
-      inputRow[camelCaseToSnakeCase(key)] = row[key];
+      inputRow[InputColumnMapper.generic(key)] = row[key];
     }
     return inputRow;
   },
@@ -152,67 +210,9 @@ const InputRowMapper = {
   },
   mobo: (row: IRow) => {
     const inputRow: IRow = {};
-
     for (const key in row) {
-      let newKey: string;
-
-      switch (key) {
-        default:
-          newKey = camelCaseToSnakeCase(key);
-          break;
-        case "m2Slots":
-          newKey = "m2_slots";
-          break;
-        case "pcie5x16Slots":
-          newKey = "pcie_5_x16_slots";
-          break;
-        case "pcie5x8Slots":
-          newKey = "pcie_5_x8_slots";
-          break;
-        case "pcie5x4Slots":
-          newKey = "pcie_5_x4_slots";
-          break;
-        case "pcie5x2Slots":
-          newKey = "pcie_5_x2_slots";
-          break;
-        case "pcie5x1Slots":
-          newKey = "pcie_5_x1_slots";
-          break;
-        case "pcie4x16Slots":
-          newKey = "pcie_4_x16_slots";
-          break;
-        case "pcie4x8Slots":
-          newKey = "pcie_4_x8_slots";
-          break;
-        case "pcie4x4Slots":
-          newKey = "pcie_4_x4_slots";
-          break;
-        case "pcie4x2Slots":
-          newKey = "pcie_4_x2_slots";
-          break;
-        case "pcie4x1Slots":
-          newKey = "pcie_4_x1_slots";
-          break;
-        case "pcie3x16Slots":
-          newKey = "pcie_3_x16_slots";
-          break;
-        case "pcie3x8Slots":
-          newKey = "pcie_3_x8_slots";
-          break;
-        case "pcie3x4Slots":
-          newKey = "pcie_3_x4_slots";
-          break;
-        case "pcie3x2Slots":
-          newKey = "pcie_3_x2_slots";
-          break;
-        case "pcie3x1Slots":
-          newKey = "pcie_3_x1_slots";
-          break;
-      }
-
-      inputRow[newKey] = row[key];
+      inputRow[InputColumnMapper.mobo(key)] = row[key];
     }
-
     return inputRow;
   },
 };
@@ -231,7 +231,7 @@ export class UserDataModel {
 
   static getComponentTableName(componentType: unknown) {
     // explicit mapping instead of camelCaseToSnakeCase() to allow
-    // for custom table names (e.g. m2_storage instead of m_2_storage)
+    // for custom table names
     switch (componentType) {
       case "cpu":
         return "cpu";
@@ -451,12 +451,12 @@ export class UserDataModel {
     let columns: string[] | undefined;
 
     if (Array.isArray(rawColumns)) {
-      columns = rawColumns.map(camelCaseToSnakeCase);
+      columns = rawColumns.map(InputColumnMapper.forType(rawTableName));
     }
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
-    const conditions = InputRowMapper.generic(rawConditions);
+    const conditions = InputRowMapper.forType(rawTableName)(rawConditions);
 
     let query = db(tableName);
     query = addWhereClauses(query, conditions);
@@ -466,8 +466,10 @@ export class UserDataModel {
         throw new Error(`Invalid orderBy on "${tableName}"`);
       }
 
+      const columnNameMapper = InputColumnMapper.forType(rawTableName);
+
       const orderBy = rawOrderBy.map(({ columnName, direction }) => ({
-        column: camelCaseToSnakeCase(columnName),
+        column: columnNameMapper(columnName),
         order: direction,
       }));
 
@@ -711,7 +713,7 @@ export class UserDataModel {
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
-    const values = InputRowMapper.generic(component);
+    const values = InputRowMapper.forType(componentType)(component);
     const [newComponent] = await db(tableName).insert(values).returning("id");
 
     return newComponent.id;
@@ -730,7 +732,7 @@ export class UserDataModel {
 
     const db = await connectTo(DatabaseName.USER_DATA);
 
-    const values = InputRowMapper.generic(changes);
+    const values = InputRowMapper.forType(componentType)(changes);
     await db(tableName).where({ id }).update(values);
   }
 
@@ -890,9 +892,8 @@ export class UserDataModel {
       throw new Error(`Invalid column name: ${columnName}`);
     }
 
-    const columnIdentifier = Object.keys(
-      InputRowMapper.mobo({ [columnName]: "" })
-    )[0];
+    const columnIdentifier =
+      InputColumnMapper.forType(componentType)(columnName);
 
     const tableName = UserDataModel.getComponentTableName(componentType);
 
