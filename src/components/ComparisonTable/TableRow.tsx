@@ -1,10 +1,11 @@
 import { SyncIcon } from "@primer/octicons-react";
+import * as React from "react";
 
 import { Button, ButtonVariant } from "components/Button";
 import { useComponent } from "hooks/useComponent";
 import { useRetailerLinks } from "hooks/useRetailerLinks";
 import { BuildComponentStoreName } from "lib/build";
-import { ColumnDefinition } from "lib/columns";
+import { ColumnDefinition, ColumnGroupDefinition } from "lib/columns";
 import { formatTimeFromNow } from "lib/format";
 import { makeClassNamePrimitives } from "lib/styles";
 
@@ -14,6 +15,7 @@ const { Div, Span } = makeClassNamePrimitives(classNames);
 
 interface TableRowProps<T extends BuildComponentStoreName> {
   columns: Array<ColumnDefinition<T>>;
+  columnGroups: Array<ColumnGroupDefinition<T>>;
   compareToRowId?: number;
   componentType: T;
   onEdit: (id: number) => void;
@@ -32,6 +34,7 @@ export const TableRow = <T extends BuildComponentStoreName>(
 ) => {
   const {
     columns,
+    columnGroups,
     compareToRowId,
     componentType,
     onEdit,
@@ -130,6 +133,25 @@ export const TableRow = <T extends BuildComponentStoreName>(
     return <Span.CellValueNeutral>{valueText}</Span.CellValueNeutral>;
   };
 
+  const renderLabelledCellValue = (
+    column: ColumnDefinition<T>,
+    showInlineLabel = false
+  ) => {
+    if (!showInlineLabel) {
+      return (
+        <React.Fragment key={`${row.id}-${column.name}`}>
+          {renderCellValue(column)}
+        </React.Fragment>
+      );
+    }
+    return (
+      <Div.LabelledCellValue key={`${row.id}-${column.name}`}>
+        <Span.CellValueLabel>{column.label}</Span.CellValueLabel>
+        {renderCellValue(column)}
+      </Div.LabelledCellValue>
+    );
+  };
+
   const renderCell = (column: ColumnDefinition<T>) => {
     const cellStyle = {
       ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
@@ -181,9 +203,45 @@ export const TableRow = <T extends BuildComponentStoreName>(
     }
   };
 
+  const renderGroupCell = (group: ColumnGroupDefinition<T>) => {
+    const cellStyle = {
+      ...(rowIndex > 0 ? { borderTop: "1px solid var(--dark0)" } : {}),
+    };
+
+    const groupColumns = group.columns
+      .map((groupColumnOrName) => {
+        if (typeof groupColumnOrName === "string") {
+          return columns.find((column) => column.name === groupColumnOrName);
+        }
+
+        const column = columns.find(
+          (column) => column.name === groupColumnOrName.name
+        );
+
+        if (!column) {
+          return;
+        }
+
+        return {
+          ...column,
+          label: groupColumnOrName.label,
+        };
+      })
+      .filter((value) => value !== undefined);
+
+    return (
+      <Div.Cell key={`${row.id}-${group.label}`} style={cellStyle}>
+        <Span.CellName>{group.label}</Span.CellName>
+        {groupColumns.map((column) =>
+          renderLabelledCellValue(column, groupColumns.length > 1)
+        )}
+      </Div.Cell>
+    );
+  };
+
   return (
     <>
-      {columns.map(renderCell)}
+      {columnGroups.map(renderGroupCell)}
       <Div.ActionCell
         key={`${row.id}-actions}`}
         style={{

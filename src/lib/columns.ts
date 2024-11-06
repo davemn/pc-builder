@@ -63,6 +63,18 @@ export interface ColumnDefinition<T extends BuildComponentStoreName> {
   unit: UnitDefinition;
 }
 
+/** Table column that combines multiple data model columns into a vertical layout within a single table cell. */
+export interface ColumnGroupDefinition<T extends BuildComponentStoreName> {
+  label: string;
+  columns: Array<
+    | string
+    | {
+        name: Extract<keyof Schema<T>, string>;
+        label: string;
+      }
+  >;
+}
+
 export const Unit: Record<string, UnitDefinition> = {
   WATTS: {
     dataType: "numeric",
@@ -150,6 +162,36 @@ export const CpuColumns: Array<ColumnDefinition<"cpu">> = [
   { label: "TDP", name: "tdp", unit: Unit.WATTS },
 ];
 
+export const CpuColumnGroups: Array<ColumnGroupDefinition<"cpu">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Socket",
+    columns: ["socket"],
+  },
+  {
+    label: "Cores",
+    columns: ["cores"],
+  },
+  {
+    label: "Cache",
+    columns: ["cache"],
+  },
+  {
+    label: "Clock Speed",
+    columns: [
+      { label: "Base", name: "baseClock" },
+      { label: "Boost", name: "boostClock" },
+    ],
+  },
+  {
+    label: "TDP",
+    columns: ["tdp"],
+  },
+];
+
 export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
@@ -165,6 +207,32 @@ export const GpuColumns: Array<ColumnDefinition<"gpu">> = [
   },
 ];
 
+export const GpuColumnGroups: Array<ColumnGroupDefinition<"gpu">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "VRAM",
+    columns: ["vram"],
+  },
+  {
+    label: "Wattage",
+    columns: ["wattage"],
+  },
+  {
+    label: "TDP",
+    columns: ["tdp"],
+  },
+  {
+    label: "Outputs",
+    columns: [
+      { label: "HDMI", name: "hdmiOutputs" },
+      { label: "DisplayPort", name: "displayPortOutputs" },
+    ],
+  },
+];
+
 export const RamColumns: Array<ColumnDefinition<"ram">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
@@ -172,6 +240,25 @@ export const RamColumns: Array<ColumnDefinition<"ram">> = [
   { label: "Capacity", name: "capacity", unit: Unit.GIGABYTES },
   { label: "Speed", name: "speed", unit: Unit.MEGATRANSFERS_PER_SECOND },
   { label: "Type", name: "type", unit: Unit.NONE },
+];
+
+export const RamColumnGroups: Array<ColumnGroupDefinition<"ram">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Capacity",
+    columns: ["capacity"],
+  },
+  {
+    label: "Speed",
+    columns: ["speed"],
+  },
+  {
+    label: "Type",
+    columns: ["type"],
+  },
 ];
 
 export const M2StorageColumns: Array<ColumnDefinition<"m2Storage">> = [
@@ -187,6 +274,38 @@ export const M2StorageColumns: Array<ColumnDefinition<"m2Storage">> = [
   { label: "Write Speed", name: "writeSpeed", unit: Unit.MEGABYTES_PER_SECOND },
 ];
 
+export const M2ColumnGroups: Array<ColumnGroupDefinition<"m2Storage">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Capacity",
+    columns: ["capacity"],
+  },
+  {
+    label: "Module",
+    columns: [
+      { label: "Code", name: "moduleCode" },
+      { label: "Key", name: "moduleKey" },
+    ],
+  },
+  {
+    label: "Interface",
+    columns: [
+      { label: "Type", name: "interface" },
+      { label: "PCIe Version", name: "pcieVersion" },
+    ],
+  },
+  {
+    label: "Speed",
+    columns: [
+      { label: "Read", name: "readSpeed" },
+      { label: "Write", name: "writeSpeed" },
+    ],
+  },
+];
+
 export const SataStorageColumns: Array<ColumnDefinition<"sataStorage">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
@@ -197,6 +316,28 @@ export const SataStorageColumns: Array<ColumnDefinition<"sataStorage">> = [
   { label: "Write Speed", name: "writeSpeed", unit: Unit.MEGABYTES_PER_SECOND },
 ];
 
+export const SataColumnGroups: Array<ColumnGroupDefinition<"sataStorage">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Capacity",
+    columns: ["capacity"],
+  },
+  {
+    label: "Form Factor",
+    columns: ["formFactor"],
+  },
+  {
+    label: "Speed",
+    columns: [
+      { label: "Read", name: "readSpeed" },
+      { label: "Write", name: "writeSpeed" },
+    ],
+  },
+];
+
 export const PsuColumns: Array<ColumnDefinition<"psu">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
@@ -205,6 +346,28 @@ export const PsuColumns: Array<ColumnDefinition<"psu">> = [
   { label: "Wattage (Peak)", name: "peakWattage", unit: Unit.WATTS },
   { label: "ATX Version", name: "atxVersion", unit: Unit.NONE },
   { label: "Efficiency Rating", name: "efficiencyRating", unit: Unit.NONE },
+];
+
+export const PsuColumnGroups: Array<ColumnGroupDefinition<"psu">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Wattage",
+    columns: [
+      { label: "Sustained", name: "sustainedWattage" },
+      { label: "Peak", name: "peakWattage" },
+    ],
+  },
+  {
+    label: "ATX Version",
+    columns: ["atxVersion"],
+  },
+  {
+    label: "Efficiency Rating",
+    columns: ["efficiencyRating"],
+  },
 ];
 
 export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
@@ -251,6 +414,91 @@ export const MoboColumns: Array<ColumnDefinition<"mobo">> = [
   },
 ];
 
+// TODO name, price
+export const MoboColumnGroups: Array<ColumnGroupDefinition<"mobo">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Socket",
+    columns: ["socket"],
+  },
+  {
+    label: "Form Factor",
+    columns: ["formFactor"],
+  },
+  {
+    label: "RAM",
+    columns: [
+      { label: "Slots", name: "ramSlots" },
+      { label: "Type", name: "ramType" },
+    ],
+  },
+  {
+    label: "M.2",
+    columns: ["m2Slots"],
+  },
+  {
+    label: "USB",
+    columns: [
+      { label: "40 Gbps", name: "usb40Ports" },
+      { label: "20 Gbps", name: "usb20Ports" },
+      { label: "10 Gbps", name: "usb10Ports" },
+      { label: "5 Gbps", name: "usb5Ports" },
+      { label: "Slow", name: "usbSlowPorts" },
+    ],
+  },
+  {
+    label: "Ethernet",
+    columns: ["ethernetGigabitRate"],
+  },
+  {
+    label: "PCIe x16",
+    columns: [
+      { label: "v5", name: "pcie5x16Slots" },
+      { label: "v4", name: "pcie4x16Slots" },
+      { label: "v3", name: "pcie3x16Slots" },
+    ],
+  },
+  {
+    label: "PCIe x8",
+    columns: [
+      { label: "v5", name: "pcie5x8Slots" },
+      { label: "v4", name: "pcie4x8Slots" },
+      { label: "v3", name: "pcie3x8Slots" },
+    ],
+  },
+  {
+    label: "PCIe x4",
+    columns: [
+      { label: "v5", name: "pcie5x4Slots" },
+      { label: "v4", name: "pcie4x4Slots" },
+      { label: "v3", name: "pcie3x4Slots" },
+    ],
+  },
+  {
+    label: "PCIe x2",
+    columns: [
+      { label: "v5", name: "pcie5x2Slots" },
+      { label: "v4", name: "pcie4x2Slots" },
+      { label: "v3", name: "pcie3x2Slots" },
+    ],
+  },
+  {
+    label: "PCIe x1",
+    columns: [
+      { label: "v5", name: "pcie5x1Slots" },
+      { label: "v4", name: "pcie4x1Slots" },
+      { label: "v3", name: "pcie3x1Slots" },
+    ],
+  },
+  {
+    label: "SATA III",
+    columns: ["sata6GbpsPorts"],
+  },
+];
+
 export const CoolerColumns: Array<ColumnDefinition<"cooler">> = [
   { label: "Name", name: "name", unit: Unit.NONE },
   { label: "Brand", name: "brand", unit: Unit.NONE },
@@ -259,4 +507,27 @@ export const CoolerColumns: Array<ColumnDefinition<"cooler">> = [
   { label: "Type", name: "type", unit: Unit.NONE },
   { label: "Size", name: "size", unit: Unit.NONE },
   { label: "Fan Diameter", name: "fanDiameter", unit: Unit.MILLIMETERS },
+];
+
+export const CoolerColumnGroups: Array<ColumnGroupDefinition<"cooler">> = [
+  {
+    label: "Brand",
+    columns: ["brand"],
+  },
+  {
+    label: "Watts of Cooling",
+    columns: ["coolingWatts"],
+  },
+  {
+    label: "Type",
+    columns: ["type"],
+  },
+  {
+    label: "Size",
+    columns: ["size"],
+  },
+  {
+    label: "Fan",
+    columns: ["fanDiameter"],
+  },
 ];

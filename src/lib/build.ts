@@ -1,13 +1,22 @@
 import {
   ColumnDefinition,
+  ColumnGroupDefinition,
   CoolerColumns,
+  CoolerColumnGroups,
   CpuColumns,
+  CpuColumnGroups,
   GpuColumns,
+  GpuColumnGroups,
   MoboColumns,
+  MoboColumnGroups,
   PsuColumns,
+  PsuColumnGroups,
   RamColumns,
+  RamColumnGroups,
   M2StorageColumns,
+  M2ColumnGroups,
   SataStorageColumns,
+  SataColumnGroups,
 } from "lib/columns";
 import {
   BuildGroupSchema,
@@ -72,6 +81,7 @@ export interface BuildComponentDefinition<T extends BuildComponentStoreName> {
   singularName: string;
   pluralName: string;
   columns: Array<ColumnDefinition<T>>;
+  columnGroups: Array<ColumnGroupDefinition<T>>;
   getCompatibilityChecks: (
     component: Schema<T>,
     build: ExtendedBuildSchema
@@ -127,6 +137,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "CPU",
     pluralName: "CPUs",
     columns: CpuColumns,
+    columnGroups: CpuColumnGroups,
     getCompatibilityChecks: (cpu, build) => {
       const compatChecks = [];
 
@@ -158,6 +169,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "GPU",
     pluralName: "GPUs",
     columns: GpuColumns,
+    columnGroups: GpuColumnGroups,
     getCompatibilityChecks: (gpu, build) => {
       const compatChecks = [];
 
@@ -201,6 +213,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "RAM",
     pluralName: "RAM",
     columns: RamColumns,
+    columnGroups: RamColumnGroups,
     getCompatibilityChecks: (ram, build) => {
       const compatChecks = [];
 
@@ -239,6 +252,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "M.2 SSD",
     pluralName: "M.2 SSDs",
     columns: M2StorageColumns,
+    columnGroups: M2ColumnGroups,
     getCompatibilityChecks: (m2Drive, build) => {
       const compatChecks = [];
       const [mobo] = build.components.mobo;
@@ -276,6 +290,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "SATA SSD",
     pluralName: "SATA SSDs",
     columns: SataStorageColumns,
+    columnGroups: SataColumnGroups,
     getCompatibilityChecks: (sataDrive, build) => {
       const compatChecks = [];
       const [mobo] = build.components.mobo;
@@ -313,6 +328,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Power Supply",
     pluralName: "Power Supplies",
     columns: PsuColumns,
+    columnGroups: PsuColumnGroups,
     getCompatibilityChecks: (psu, build) => {
       // TODO Check if PSU has enough & correct connectors for GPU(s), SATA SSDs, mobo, coolers, etc.
       return [];
@@ -323,6 +339,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Motherboard",
     pluralName: "Motherboards",
     columns: MoboColumns,
+    columnGroups: MoboColumnGroups,
     getCompatibilityChecks: (mobo, build) => {
       // TODO check case compatibility once CaseSchema has been added
       return [];
@@ -333,6 +350,7 @@ export const BuildComponentMeta: BuildComponentRecord = {
     singularName: "Cooler",
     pluralName: "Coolers",
     columns: CoolerColumns,
+    columnGroups: CoolerColumnGroups,
     getCompatibilityChecks: (cooler, build) => {
       const compatChecks = [];
 

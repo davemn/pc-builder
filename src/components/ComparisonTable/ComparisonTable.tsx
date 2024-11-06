@@ -74,7 +74,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
   const { createComponent, updateComponent } = useComponentMutations();
 
   const allRowIds = queryData.allComponentIds;
-  const columns = BuildComponentMeta[dataStoreName].columns;
+  const { columns, columnGroups } = BuildComponentMeta[dataStoreName];
   const selectedRowIsCompatible =
     isPending ||
     queryData.buildCompatibleComponentIds.some((id) => id === selectedRowId);
@@ -140,11 +140,12 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           >
             <Div.Table
               style={{
-                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
+                gridTemplateColumns: `repeat(${columnGroups.length}, minmax(max-content, 1fr)) 125px`,
               }}
             >
               <TableRow
                 columns={columns}
+                columnGroups={columnGroups}
                 componentType={dataStoreName}
                 onEdit={() => handleEdit(selectedRowId, true)}
                 onEditPriceHistory={() =>
@@ -179,7 +180,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
       <Div.TableScrollContainer>
         <Div.Table
           style={{
-            gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
+            gridTemplateColumns: `repeat(${columnGroups.length}, minmax(max-content, 1fr)) 125px`,
             ...style,
           }}
         >
@@ -187,6 +188,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
             <TableRow
               key={rowId}
               columns={columns}
+              columnGroups={columnGroups}
               compareToRowId={selectedRowId}
               componentType={dataStoreName}
               onEdit={() => handleEdit(rowId)}
@@ -198,14 +200,14 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           ))}
           {allRowIds.length === 0 && (
             <Div.EmptyState
-              style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+              style={{ gridColumn: `1 / span ${columnGroups.length + 2}` }}
             >
               {isPending ? "Loading..." : "Nothing added"}
             </Div.EmptyState>
           )}
           {allRowIds.length > 0 && unselectedRowIds.length === 0 && (
             <Div.EmptyState
-              style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+              style={{ gridColumn: `1 / span ${columnGroups.length + 2}` }}
             >
               {selectedRowId !== undefined
                 ? `No compatible ${componentTypePluralLabel} to compare`
@@ -224,7 +226,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
           <Div.TableScrollContainer>
             <Div.Table
               style={{
-                gridTemplateColumns: `repeat(${columns.length}, minmax(max-content, 1fr)) 125px`,
+                gridTemplateColumns: `repeat(${columnGroups.length}, minmax(max-content, 1fr)) 125px`,
                 ...style,
               }}
             >
@@ -232,6 +234,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
                 <TableRow
                   key={rowId}
                   columns={columns}
+                  columnGroups={columnGroups}
                   compareToRowId={selectedRowId}
                   componentType={dataStoreName}
                   onEdit={() => handleEdit(rowId)}
@@ -243,7 +246,7 @@ export const ComparisonTable = <T extends BuildComponentStoreName>(
               ))}
               {allRowIds.length === 0 && (
                 <Div.EmptyState
-                  style={{ gridColumn: `1 / span ${columns.length + 2}` }}
+                  style={{ gridColumn: `1 / span ${columnGroups.length + 2}` }}
                 >
                   {isPending ? "Loading..." : "Nothing added"}
                 </Div.EmptyState>

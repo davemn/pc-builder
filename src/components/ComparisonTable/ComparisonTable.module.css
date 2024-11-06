@@ -45,10 +45,6 @@
   display: grid;
 }
 
-.row:not(:first-child) {
-  border-top: 1px solid var(--dark0);
-}
-
 .cell,
 .actionCell {
   background-color: var(--dark10);
@@ -57,8 +53,8 @@
   flex-direction: column;
   justify-content: center;
   align-items: stretch;
-  gap: 10px;
-  text-align: center;
+  gap: 4px;
+  text-align: left;
 }
 
 .actionCell {
@@ -107,19 +103,30 @@
   font-size: var(--fontSizeBody);
 }
 
+.labelledCellValue {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cellValueLabel {
+  color: var(--light80);
+  font-size: var(--fontSizeBody);
+}
+
 .cellValueNeutral {
   color: var(--light90);
-  font-size: 22px;
+  font-size: var(--fontSizeHeading);
 }
 
 .cellValuePositive {
   color: var(--positive100);
-  font-size: 22px;
+  font-size: var(--fontSizeHeading);
 }
 
 .cellValueNegative {
   color: var(--negative100);
-  font-size: 22px;
+  font-size: var(--fontSizeHeading);
 }
 
 .emptyState {
@@ -127,7 +134,7 @@
   min-height: 120px;
 
   color: var(--light80);
-  font-size: 16px;
+  font-size: var(--fontSizeBody);
 
   display: flex;
   justify-content: center;
