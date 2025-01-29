@@ -44,7 +44,7 @@
     "name": "David Mann",
     "email": "stratlater@gmail.com"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
     "sqlite3": "^5.1.7"
